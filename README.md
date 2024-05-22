@@ -3,4 +3,4 @@ API dos serviços
 
 ### Ciclo de Vida
 
-<img>
+<img src="Ciclo_API.jpeg">
