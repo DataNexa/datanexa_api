@@ -8,3 +8,5 @@ API dos serviços
 ## Autenticação
 
 <img src="Autentication.jpeg">
+
+<img src="AuthDB.jpeg">
