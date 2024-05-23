@@ -1,0 +1,11 @@
+{
+    "port":3000,
+    "token_default":"7062b9fbe6e1d9124e0e6d128ae3659f301c60d3af6fe5f45a0158f47488c18e44801d9c1801e4be69861782e5b5415d54a58a8721bda842c380b114e1b5b588",
+    "database":{
+        "host":"localhost",
+        "user":"testando.user",
+        "pass":"Hjkd@2309#D",
+        "port":3306,
+        "name":"testando"
+    }
+}
