@@ -10,13 +10,14 @@ interface data_user_i {
     user_id:number,
     slug:string,
     user_type:string,
-    nonce:number,
-    hash:string
+    hash:string,
+    vtoken:number
 }
 
 interface data_token_i {
     token_account_device:string,
-    token_account_hash:string
+    token_account_refresh:string,
+    vtoken:number
 }
 
 interface header_i {
