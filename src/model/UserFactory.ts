@@ -18,6 +18,8 @@ class UserFactory {
 
                 if(dataUser.header.type == type_session.SESSION && dataUser.user){
 
+                    // resgatar usuário completo conforme as informação da sessao
+                        // comparar se o vtoken da sessao é o mesmo que o vtoken 
                     // verificar se o nonce e o hash estao corretos no session control
                     // e pegar o client_slug e as permissões do usuario no banco de dados
                     // lembrando que apenas o USER_CLIENT precisa de pemissões
