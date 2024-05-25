@@ -56,21 +56,27 @@ create table if not exists session_temp (
 )ENGINE=InnoDB;
 
 create table if not exists token_account (
+    id bigint(255) not null auto_increment,
     account_id bigint(255) not null unique,
     vtoken int not null default 1,
 
     foreign key(account_id)
-        references account(id)
+        references account(id),
+
+    primary key(id)
 )ENGINE=InnoDB;
 
 create table if not exists token_device_account (
+    id bigint(255) not null auto_increment,
     token_account_id bigint(255) not null,
     hash_salt varchar(250) not null unique,
     refresh_token varchar(250) not null unique,
     device varchar(250),
 
     foreign key(token_account_id)
-        references token_account(id)
+        references token_account(id),
+
+    primary key(id)
 )ENGINE=InnoDB;
 
 
@@ -82,7 +88,7 @@ create table if not exists recover (
     expired tinyint(1) default 0,
 
     foreign key(account_id)
-        references account(id);
+        references account(id),
 
     primary key(id)
 ) ENGINE=InnoDB;
@@ -101,7 +107,6 @@ create table if not exists service_actions (
     slug varchar(255) not null unique,
     nome varchar(255) not null,
     descricao varchar(255) not null,
-    template_log varchar(255) not null,
     ativo tinyint(1) default 1,
 
     foreign key(service_id)
@@ -121,7 +126,7 @@ create table if not exists logs (
         references user(id),
     
     foreign key(service_action_id)
-        references service_action(id),
+        references service_actions(id),
 
     primary key(id)
 ) ENGINE=InnoDB;
@@ -135,7 +140,7 @@ create table if not exists user_permission (
         references user(id),
     
     foreign key(service_action_id)
-        references service_action(id),
+        references service_actions(id),
 
     primary key(id)
 )ENGINE=InnoDB;

@@ -10,13 +10,12 @@ interface data_user_i {
     user_id:number,
     slug:string,
     user_type:string,
-    hash:string,
+    token_device_id:number,
     vtoken:number
 }
 
 interface data_token_i {
-    token_account_device:string,
-    token_account_refresh:string,
+    token_device_id:number,
     vtoken:number
 }
 
@@ -28,8 +27,8 @@ interface header_i {
 interface response_data_i { header:header_i, user?:data_user_i, account?:data_token_i }
 
 
-const generateSession = (data_user:data_user_i) => {
-    return JWT.generate({alg:'sha512', type:type_session.SESSION, expire_in:Date.now() + 1000 * 60 * 30}, data_user)
+const generateSession = (data_user:data_user_i, hash_salt:string, vtoken:number) => {
+    return JWT.generate({alg:'sha512', type:type_session.SESSION, expire_in:Date.now() + 1000 * 60 * 60}, data_user, hash_salt, vtoken)
 }
 
 const generateToken = (data_token:data_token_i) => {
@@ -40,9 +39,9 @@ const generateSessionTemp = (data:any) => {
     return JWT.generate({alg:'sha512', type:type_session.SESSION, expire_in:Date.now() + 1000 * 60 * 30}, data)
 }
 
-const verifySession = (session:string):false|response_data_i => {
+const verifySession = (session:string, hash_salt:string = "", vtoken:number = 0):false|response_data_i => {
     
-    const data_full = JWT.verify(session)
+    const data_full = JWT.verify(session, hash_salt, vtoken)
     
     if(!data_full) return false
     let time_now = data_full.header.expire_in - Date.now()
@@ -62,4 +61,4 @@ const verifySession = (session:string):false|response_data_i => {
     
 }
 
-export { type_session, generateSession, verifySession, generateToken, generateSessionTemp}
+export { type_session, data_user_i, data_token_i, header_i, generateSession, verifySession, generateToken, generateSessionTemp}

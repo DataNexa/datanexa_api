@@ -9,8 +9,10 @@ interface user_i {
     session:string|undefined,
     slug:string|undefined,
     permissions:string[],
-    client_slug:string|undefined,
-    token_account:string|undefined
+    client_id:number|undefined,
+    token_account:string|undefined,
+    token_device_id:number|undefined,
+    vtoken:number|undefined
 }
 
 class User {
@@ -21,8 +23,10 @@ class User {
     private session:string|undefined
     private slug:string|undefined
     private permissions:string[] = []
-    private client_slug:string|undefined
+    private client_id:number|undefined
     private token_account:string|undefined
+    private token_device_id:number|undefined
+    private vtoken:number|undefined
     private newSession:boolean = false
 
     public setTypeUser(type:string){
@@ -51,8 +55,8 @@ class User {
         this.permissions = permissions
     }
 
-    public setClientSlug(client_slug:string){
-        this.client_slug = client_slug
+    public setClientId(client_id:number){
+        this.client_id = client_id
     }
 
     public setSessionTemp(session_temp:string){
@@ -63,6 +67,14 @@ class User {
         this.token_account = token_account
     }
 
+    public setTokenDeviceId(token_device_id:number){
+        this.token_device_id = token_device_id
+    }
+
+    public setVToken(vtoken:number){
+        this.vtoken = vtoken
+    }
+
     public getJSON():user_i {
         return {
             user_id:this.user_id,
@@ -71,8 +83,10 @@ class User {
             session:this.session,
             slug:this.slug,
             permissions:this.permissions,
-            client_slug:this.client_slug,
-            token_account:this.token_account
+            client_id:this.client_id,
+            token_account:this.token_account,
+            token_device_id:this.token_device_id,
+            vtoken:this.vtoken
         }
     }
 

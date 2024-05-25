@@ -7,7 +7,8 @@ import cors from 'cors';
 declare global{
     namespace Express {
         interface Response {
-            user: User
+            user: User,
+            dataBody:any // aqui será injetado o dado
         }
     }
 }
