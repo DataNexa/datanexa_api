@@ -1,83 +1,93 @@
 import { User } from "./User";
 import { Request, Response, NextFunction } from "express"
 
-import { type_session, generateSession, verifySession, generateToken } from "./session_manager";
+import { type_session, data_token_i, data_user_i, header_i, generateSession, verifySession, generateToken } from "./session_manager";
+import response from "../helpers/response";
 
+const generateUser = async (dataUser:data_user_i, header:header_i, user:User):Promise<boolean> => {
 
-class UserFactory {
+    const token_device_id = dataUser.token_device_id
+    // user token_device_id para resgatar o vtoken e o hash_salt
+    const vtoken_db = 1 // resgatado no banco de dados
+    const hash_salt = "saltdfkj"
 
-    private user:User = new User()
-
-    constructor(session?:string){
-        
-        if(session){
-            
-            const dataUser = verifySession(session)
-            
-            if (dataUser != false) {
-
-                if(dataUser.header.type == type_session.SESSION && dataUser.user){
-
-                    // resgatar usuário completo conforme as informação da sessao
-                        // comparar se o vtoken da sessao é o mesmo que o vtoken 
-                    // verificar se o nonce e o hash estao corretos no session control
-                    // e pegar o client_slug e as permissões do usuario no banco de dados
-                    // lembrando que apenas o USER_CLIENT precisa de pemissões
-                    
-                    // se o nonce e o hash estao corretos e nao for um session_temp...
-                    // verificar se sessao precisa ser renovada
-                    
-                    let hasNewSession = dataUser.header.expire_in - Date.now() <  1000 * 60 * 5
-
-                    if(hasNewSession){
-                        // gera nova sessao
-                        session = generateSession(dataUser.user)
-                    }
-                    
-                    this.user.setId(dataUser.user.user_id)
-                    this.user.setSession(session, hasNewSession)
-                    this.user.setTypeUser(dataUser.user.user_type)
-                    this.user.setSlug(dataUser.user.slug)
-
-                    this.user.setClientSlug("qs_midia")
-                    this.user.setPermissions(["salvar"])
-
-                    return
-                }
-
-                if(dataUser.header.type == type_session.SESSION_TEMP){
-                    this.user.setSessionTemp(session)
-                    return 
-                }
-
-                if(dataUser.account){
-                    const token_account = 
-                        dataUser.header.expire_in - Date.now() <  1000 * 60 * 60 * 24 * 330 ? 
-                        generateToken(dataUser.account) :
-                        session  
-                    
-                    // salva o token no banco de dados
-                    // gera uma sessao e redireciona para a home
-
-                    this.user.setTokenAccount(token_account)
-                }
-
-            }
-
-        }
-
+    if(vtoken_db != dataUser.vtoken){
+        return false
     }
 
-    public getUser():User{
-        return this.user
+    let hasNewSession = header.type == type_session.SESSION && header.expire_in - Date.now() <  1000 * 60 * 30
+    if(hasNewSession){
+        user.setSession(generateSession(dataUser, hash_salt, vtoken_db), true)
     }
+    
+    user.setTypeUser(dataUser.user_type)
+    user.setId(dataUser.user_id)
+    user.setSlug(dataUser.slug)
+    user.setTokenDeviceId(dataUser.token_device_id)
+
+    // iserir outros dados do usuario como permissões, etc
+
+    return true
 
 }
 
-export default (req:Request, res:Response, next:NextFunction) => {
-    const sess = typeof req.headers.session == 'string' ? req.headers.session : undefined
-    const userFactory:UserFactory = new UserFactory(sess)
-    res.user = userFactory.getUser()
+const generateUserAccount = async (dataToken:data_token_i, user:User):Promise<boolean> => {
+    const token_device_id = dataToken.token_device_id
+    // user token_device_id para resgatar o vtoken e o hash_salt
+    const vtoken_db = 1 // resgatado no banco de dados
+    user.setTokenDeviceId(token_device_id)
+    if(vtoken_db != dataToken.vtoken){
+        return false
+    }
+    
+    // isere os dados necessários do banco de dados
+    user.setVToken(dataToken.vtoken)
+
+    return true
+
+}
+
+export default async (req:Request, res:Response, next:NextFunction) => {
+    
+    const sess = typeof req.headers.session == 'string' ? req.headers.session : false
+    const user = new User()
+   
+    if(sess){
+        
+        const dataUser = verifySession(sess)
+       
+        if(dataUser && dataUser.user){
+           
+            if(dataUser.header.type == type_session.SESSION_TEMP){
+                user.setSessionTemp(sess)
+            }
+
+            if(dataUser.header.type == type_session.SESSION){
+                user.setSession(sess)
+            }
+
+            let status = await generateUser(dataUser.user, dataUser.header, user)
+            if(!status){
+                return response(res,{
+                    code: 401
+                }, next)
+            }
+
+        } else
+        if(dataUser && dataUser.account){
+            user.setTokenAccount(sess)
+            let status = await generateUserAccount(dataUser.account, user)
+            if(!status){
+                return response(res,{
+                    code: 401
+                }, next)
+            }
+            
+        } 
+
+    }
+
     next()
+    
 }
 

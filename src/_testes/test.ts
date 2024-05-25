@@ -3,6 +3,5 @@ import { Request, Response } from 'express'
 
 
 export default async () => {
-    let res = await test_query_helper()
-    console.log(res);
+   
 }

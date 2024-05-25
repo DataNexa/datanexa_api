@@ -1,4 +1,4 @@
-import { Response } from 'express'
+import { NextFunction, Response } from 'express'
 
 interface response_i {
     body?:any,
@@ -8,11 +8,20 @@ interface response_i {
     code:number
 }
 
-export default (res:Response, dataResponse?:response_i) => {
+export default (res:Response, dataResponse:response_i = { code:200 }, next?:NextFunction) => {
+    
     const user = res.user
-    if(dataResponse && user.isNewSession()){
+    
+    if(user.isNewSession()){
         dataResponse.session = user.getSession()
     }
-    res.statusCode = dataResponse ? dataResponse.code : 200
+    
+    res.statusCode = dataResponse.code
     res.send(dataResponse)
+    res.dataBody = dataResponse.body
+
+    if(next && dataResponse.code == 200){
+        next()
+    }
+    
 }
