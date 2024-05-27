@@ -1,9 +1,9 @@
 import globals from "../config/globals";
-import { createPool } from "mysql";
+import { createPool, RowDataPacket, QueryError, QueryResult } from "mysql2";
 
 const database = globals.database
 
-const mysqli   = createPool({
+const mysqli   = () => createPool({
     host:database.host,
     user:database.user,
     password:database.pass,
@@ -11,4 +11,10 @@ const mysqli   = createPool({
     database:database.name
 })
 
-export default () => mysqli
+
+export {
+    mysqli,
+    RowDataPacket,
+    QueryError,
+    QueryResult
+}
