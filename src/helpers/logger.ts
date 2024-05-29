@@ -1,22 +1,31 @@
 import { query, execute } from "./query";
 import globals from "../config/globals";
 
-const saveLog = async (slug_service_action:string, texto:string) => {
+const saveLog = async (slug_service_action:string, texto:string, user_id?:number) => {
 
     const dataAtual = new Date();
     const res = await query("select id from service_actions where slug = ?", {
         binds:[slug_service_action]
     })
 
-    if(res.length == 0 && !globals.production)
-        return console.log(`serviço ${slug_service_action} inexistente`)
+    if(!res.rows){
+        if(!globals.production)
+            console.log(`LOGGER: serviço ${slug_service_action} inexistente`)
+        return 
+    }      
+    
+    const data = res.rows as any
+    
+    const id_service = data['id']
+    const binds      = [dataAtual, id_service, texto]
+    if(user_id && user_id > 0) binds.push(user_id)
 
-    const data = res[0]
+    let str_ins = "insert into logs"
+    str_ins += user_id && user_id > 0 ? "(create_at, service_action_id, resumo, user_id)" : "(create_at, service_action_id, resumo)"
+    str_ins += user_id && user_id > 0 ? " values (?,?,?,?)" : " values (?,?,?)"
     
-    let id_service = Array.isArray(data) ? data[0]['id'] : data['id']
-    
-    const resins = await execute("insert into logs(create_at, service_action_id, resumo) values (?,?,?)",{
-        binds:[dataAtual, id_service, texto]
+    const resins = await execute(str_ins,{
+        binds:binds
     })
 
     if(!resins && !globals.production){

@@ -1,5 +1,5 @@
 import globals from "../config/globals";
-import { createPool, RowDataPacket, QueryError, QueryResult } from "mysql2";
+import { createPool, RowDataPacket, QueryError, QueryResult, Pool, PoolConnection, } from "mysql2/promise";
 
 const database = globals.database
 
@@ -12,9 +12,12 @@ const mysqli   = () => createPool({
 })
 
 
+
 export {
     mysqli,
     RowDataPacket,
     QueryError,
-    QueryResult
+    QueryResult,
+    Pool,
+    PoolConnection
 }

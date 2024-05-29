@@ -11,13 +11,13 @@ interface response_i {
 export default (res:Response, dataResponse:response_i = { code:200 }, next?:NextFunction) => {
     
     const user = res.user
-    
+
     if(user.isNewSession()){
         dataResponse.session = user.getSession()
     }
     
     res.statusCode = dataResponse.code
-    res.send(dataResponse)
+    res.json(dataResponse)
     res.dataBody = dataResponse.body
 
     if(next && dataResponse.code == 200){

@@ -1,7 +1,21 @@
-import { mysqli, RowDataPacket, QueryError, QueryResult } from "./mysqli"
+import { mysqli, RowDataPacket, QueryError, QueryResult, Pool, PoolConnection } from "./mysqli"
 import globals from "../config/globals"
 import { NextFunction, Response } from 'express'
 import response from "./response"
+
+interface response_query {
+    error:boolean,
+    error_code?:number,
+    error_message?:string,
+    rows:QueryResult
+}
+
+interface response_exec {
+    error:boolean,
+    error_code?:number,
+    error_message?:string,
+    info:QueryResult
+}
 
 interface query_obj {
     table:string,
@@ -23,75 +37,123 @@ interface query_oriented {
 interface execute_oriented {
     binds?:any[],
     next?:NextFunction,
-    res?:Response,
-    lastInserted?:boolean
+    res?:Response
 }
+
+class MultiTransaction {
+
+    private conn:PoolConnection | null = null;
+    private transaction_num:number = 0
+    private isBegin:boolean = false
+
+    constructor(conn:PoolConnection | null){
+        this.conn = conn
+    }
+
+    getTransactionNumber(){
+        return this.transaction_num
+    }
+
+    async begin(){
+        if(!this.conn || this.isBegin){
+            return false
+        }
+        await this.conn.beginTransaction()
+        this.isBegin = true
+        return true
+    }
+
+    async execute(query:string, oriented?:execute_oriented):Promise<response_query>{
+        try {
+            if(!this.conn) return {
+                error:true,
+                error_code:1,
+                rows:[]
+            }
+            const [result] = await this.conn.execute(query, oriented?.binds)
+            return {
+                error:false,
+                rows:result
+            }
+        } catch (error) {
+            await this.rollBack()
+            return {
+                error:true,
+                error_code:2,
+                rows:[]
+            }
+            
+        }
+
+    }
+
+    async query(query:string, oriented?:execute_oriented):Promise<response_query> {
+        try {
+            if(!this.conn) return {
+                error:true,
+                error_code:1,
+                rows:[]
+            }
+            const [result] = await this.conn.query(query, oriented?.binds)
+            return {
+                error:false,
+                rows:result
+            }
+        } catch (error) {
+            await this.rollBack()
+            return {
+                error:true,
+                error_code:2,
+                rows:[]
+            }
+            
+        }
+    }
+
+    private async rollBack(){
+        if(!this.conn) return
+        await this.conn.rollback()
+        this.conn.release();
+        this.conn = null
+    }
+
+    async finish() {
+        if(!this.conn) return
+        await this.conn.commit()
+        this.conn.release();
+        this.conn = null
+    }
+
+}
+
+const multiTransaction = async ():Promise<MultiTransaction> => {
+    const conn = await mysqli().getConnection()
+    const mult = new MultiTransaction(conn)
+    await mult.begin()
+    return mult
+}
+
 
 const genQueryString = (query:query_obj) => {
     return ""
 }
 
-const queryPromisse = (query:string|query_obj, binds?:any[]):Promise<RowDataPacket[] | RowDataPacket[][]> => {
-    
-    const querystr:string = typeof query == "string" ? query : genQueryString(query)
 
-    return new Promise((resolve, reject) => {
-        if(binds){
-            mysqli().query(querystr, binds, function (err:QueryError | null, result:RowDataPacket[] | RowDataPacket[][]) {
-                if (err) {
-                    return reject(err)
-                }
-                resolve(result)
-            })
-        } else {
-            mysqli().query(querystr, function (err:QueryError | null, result:RowDataPacket[] | RowDataPacket[][]) {
-                if (err) {
-                    return reject(err)
-                }
-                resolve(result)
-            })
-        }
-        
-    })
-    
-}
-
-const executePromise = (query:string|query_obj, binds?:any[]):Promise<QueryResult> => {
-    
-    const querystr:string = typeof query == "string" ? query : genQueryString(query)
-
-    return new Promise((resolve, reject) => {
-        if(binds){
-            mysqli().execute(querystr, binds, function (err:QueryError | null, result:RowDataPacket[] | RowDataPacket[][]) {
-                if (err) {
-                    return reject(err)
-                }
-                resolve(result)
-            })
-        } else {
-            mysqli().execute(querystr, function (err:QueryError | null, result:RowDataPacket[] | RowDataPacket[][]) {
-                if (err) {
-                    return reject(err)
-                }
-                resolve(result)
-            })
-        }
-        
-    })
-}
-
-const query = async (query:string|query_obj, oriented?:query_oriented) => { 
+const query = async (query:string, oriented?:query_oriented):Promise<response_query> => { 
     try {
-        let result = await queryPromisse(query, oriented?.binds)
+
+        let [result] = await mysqli().query(query, oriented?.binds)
 
         if(oriented?.res){
-            if(oriented?.notEmptyRows && result.length == 0 )
+            if(oriented?.notEmptyRows && result )
                 response(oriented.res, { code:404, message:'Registro não encontrado' })
             else
                 response(oriented.res, { body:result, code:200 })
         }
-
-        return result
+        return {
+            rows: result,
+            error:false
+        }
    
     } catch (e) {
 
@@ -101,14 +163,23 @@ const query = async (query:string|query_obj, oriented?:query_oriented) => {
         if(oriented?.res)
             response(oriented.res, { code:500 })
         
-        return []
+        return {
+            error_code: (e as any).errno,
+            error_message: (e as any).sqlMessage,
+            rows:[],
+            error:true
+        }
     }
 }
 
 
-const execute = async (query:string|query_obj, oriented?:execute_oriented) => { 
+const execute = async (query:string, oriented?:execute_oriented):Promise<response_query> => { 
     try {
-        return await executePromise(query, oriented?.binds)
+        const [result] = await mysqli().execute(query, oriented?.binds)
+        return {
+            error:false,
+            rows:result
+        }
     } catch (e) {
 
         if(!globals.production)
@@ -117,10 +188,15 @@ const execute = async (query:string|query_obj, oriented?:execute_oriented) => {
         if(oriented?.res)
             response(oriented.res, { code:500 })
         
-        return false
+        return {
+            error:true,
+            rows:[],
+            error_code:(e as any).errno,
+            error_message:(e as any).sqlMessage
+        }
     }
 }
 
 
 
-export { query , execute } 
+export { query , execute, multiTransaction } 

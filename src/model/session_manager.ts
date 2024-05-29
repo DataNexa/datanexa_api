@@ -14,6 +14,11 @@ interface data_user_i {
     vtoken:number
 }
 
+interface data_account_i {
+    nome:string,
+    account_id:number
+}
+
 interface data_token_i {
     token_device_id:number,
     vtoken:number
@@ -24,7 +29,7 @@ interface header_i {
     expire_in:number
 }
 
-interface response_data_i { header:header_i, user?:data_user_i, account?:data_token_i }
+interface response_data_i { header:header_i, user?:data_user_i, token?:data_token_i, account?:data_account_i }
 
 
 const generateSession = (data_user:data_user_i, hash_salt:string, vtoken:number) => {
@@ -35,7 +40,7 @@ const generateToken = (data_token:data_token_i) => {
     return JWT.generate({alg:'sha512', type:type_session.TOKEN, expire_in:Date.now() + 1000 * 60 * 60 * 24 * 365}, data_token)
 }
 
-const generateSessionTemp = (data:any) => {
+const generateSessionTemp = (data:data_account_i) => {
     return JWT.generate({alg:'sha512', type:type_session.SESSION, expire_in:Date.now() + 1000 * 60 * 30}, data)
 }
 
@@ -61,4 +66,4 @@ const verifySession = (session:string, hash_salt:string = "", vtoken:number = 0)
     
 }
 
-export { type_session, data_user_i, data_token_i, header_i, generateSession, verifySession, generateToken, generateSessionTemp}
+export { type_session, data_account_i, data_user_i, data_token_i, header_i, generateSession, verifySession, generateToken, generateSessionTemp}

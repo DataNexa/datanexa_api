@@ -1,7 +1,7 @@
 import { User } from "./User";
 import { Request, Response, NextFunction } from "express"
 
-import { type_session, data_token_i, data_user_i, header_i, generateSession, verifySession, generateToken } from "./session_manager";
+import { type_session, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, generateToken } from "./session_manager";
 import response from "../helpers/response";
 
 const generateUser = async (dataUser:data_user_i, header:header_i, user:User):Promise<boolean> => {
@@ -31,7 +31,18 @@ const generateUser = async (dataUser:data_user_i, header:header_i, user:User):Pr
 
 }
 
-const generateUserAccount = async (dataToken:data_token_i, user:User):Promise<boolean> => {
+const generateUserAccount = async (dataAccount:data_account_i, header:header_i, user:User): Promise<boolean> => {
+
+    const account_id = dataAccount.account_id
+    // verificar se a sessão_temporaria expirou pelo banco de dados usando ( expire_in > date() AND used = 0)
+    // se expirou, retorne false
+    // se não expirou, altere o valor do campo used para 1 e retorne os dados
+
+    return true
+
+}
+
+const generateUserToken = async (dataToken:data_token_i, user:User):Promise<boolean> => {
     const token_device_id = dataToken.token_device_id
     // user token_device_id para resgatar o vtoken e o hash_salt
     const vtoken_db = 1 // resgatado no banco de dados
@@ -56,15 +67,9 @@ export default async (req:Request, res:Response, next:NextFunction) => {
         
         const dataUser = verifySession(sess)
        
-        if(dataUser && dataUser.user){
-           
-            if(dataUser.header.type == type_session.SESSION_TEMP){
-                user.setSessionTemp(sess)
-            }
+        if(dataUser && dataUser.user && dataUser.header.type == type_session.SESSION){
 
-            if(dataUser.header.type == type_session.SESSION){
-                user.setSession(sess)
-            }
+            user.setSession(sess)
 
             let status = await generateUser(dataUser.user, dataUser.header, user)
             if(!status){
@@ -74,9 +79,21 @@ export default async (req:Request, res:Response, next:NextFunction) => {
             }
 
         } else
-        if(dataUser && dataUser.account){
+        if(dataUser && dataUser.account && dataUser.header.type == type_session.SESSION_TEMP){
+
+            user.setSession(sess)
+
+            let status = await generateUserAccount(dataUser.account, dataUser.header, user)
+            if(!status){
+                return response(res,{
+                    code: 401
+                }, next)
+            }
+
+        } else
+        if(dataUser && dataUser.token){
             user.setTokenAccount(sess)
-            let status = await generateUserAccount(dataUser.account, user)
+            let status = await generateUserToken(dataUser.token, user)
             if(!status){
                 return response(res,{
                     code: 401
@@ -86,7 +103,7 @@ export default async (req:Request, res:Response, next:NextFunction) => {
         } 
 
     }
-
+    res.user = user
     next()
     
 }

@@ -3,6 +3,7 @@ enum type_user {
 }
 
 interface user_i {
+    account_id:number,
     user_id:number,
     type_user:string,
     temp:string|undefined,
@@ -18,6 +19,7 @@ interface user_i {
 class User {
 
     private user_id:number = 0
+    private account_id:number = 0
     private type_user:type_user = type_user.ANONIMUS
     private session_temp:string|undefined
     private session:string|undefined
@@ -29,6 +31,18 @@ class User {
     private vtoken:number|undefined
     private newSession:boolean = false
 
+    public getAccountId() {
+        return this.account_id
+    }
+
+    public getUserId() {
+        return this.user_id
+    }
+
+    public isNewSession():boolean {
+        return this.newSession
+    }
+
     public setTypeUser(type:string){
         if(["GHOST", "ADMIN", "ADMIN_CLIENT", "USER_CLIENT", "ANONIMUS"].includes(type))
         this.type_user = type_user[type as keyof typeof type_user]
@@ -39,16 +53,16 @@ class User {
         this.session = session
     }
 
-    public isNewSession() {
-        return this.newSession
-    }
-
     public setId(id:number){
         this.user_id = id
     }
 
     public setSlug(slug:string){
         this.slug = slug
+    }
+
+    public setAccountId(account_id:number) {
+        this.account_id = account_id
     }
 
     public setPermissions(permissions:string[]){
@@ -77,6 +91,7 @@ class User {
 
     public getJSON():user_i {
         return {
+            account_id:this.account_id,
             user_id:this.user_id,
             type_user:type_user[this.type_user],
             temp:this.session_temp,
