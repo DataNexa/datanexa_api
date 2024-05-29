@@ -5,6 +5,7 @@ import { query, execute, multiTransaction } from '../helpers/query';
 import JWT from '../model/JWT';
 import { generateSessionTemp, generateToken } from '../model/session_manager';
 import globals from '../config/globals';
+import { account_repo, JOIN } from '../repositories/account.repo';
 
 export default {
 
@@ -45,7 +46,7 @@ export default {
                 })
         }
 
-        const account_id = (statusResp as any).insertId
+        const account_id = (statusResp.rows as any[])[0].insertId
 
         const statusCreate = await conn.execute('insert into token_account(account_id, vtoken) values (?,?)', {
             binds:[account_id, 1]
@@ -80,50 +81,45 @@ export default {
 
         const { email, senha } = req.body
 
-        const resp = await query(
-            `select 
-                account.senha, account.id, token_account.id as token_account_id, token_account.vtoken 
-                from account join token_account on token_account.account_id = account_id 
-            where account.email = ?`, {
-                binds:[email]
-            }
-        )
+        const acc = await account_repo.getAccount({
+            email: email
+        }, {
+            join:[JOIN.TOKEN_ACCOUNT]
+        })
 
-
-        const data = resp.rows as any[]
-
-        const id = data[0]['id']
-        const passHash = data[0]['senha']
-        const vtoken = data[0]['vtoken']
-        const token_account_id = data[0]['token_account_id']
-
-        if(!await JWT.comparePassword(senha, passHash)){
+        if(!await JWT.comparePassword(senha, acc.senha)){
             return response(res, {
                 code:404
             })
         }
 
-        const device        = req.headers['user-agent'] 
-        const refresh_token = JWT.newToken(`${id}refresh_token`, 'sha512')
-        const hash_salt     = JWT.newToken(`${id}hash_salt`)
+        if(!acc.token_account){
+            return response(res, {
+                code: 500,
+                message: 'ERRO NO REGISTRO'
+            })
+        }
 
-        const respIns = await execute(
-            `insert into 
-                token_device_account (token_account_id, hash_salt, refresh_token, device)
-                values(?,?,?,?)`,{
-                    binds:[token_account_id, hash_salt, refresh_token, device]
-                })
-        
-        if(!respIns) return response(res, {
-            code:500,
-            message:'ERRO AO TENTAR SALVAR O TOKEN NO BANCO DE DADOS'
-        })
+        const device        = req.headers['user-agent'] ? req.headers['user-agent'] : ''
+        const refresh_token = JWT.newToken(`${acc.id}refresh_token`, 'sha512')
+        const hash_salt     = JWT.newToken(`${acc.id}hash_salt`)
 
-        const token_device_id = (respIns as any).insertId
+        const response_register = await account_repo.registerToken(
+            acc.token_account.token_account_id,
+            hash_salt,
+            refresh_token,
+            device
+        )
+
+        if(response_register.error)
+            return response(res, {
+                code:500,
+                message:'ERRO AO TENTAR SALVAR O TOKEN NO BANCO DE DADOS'
+            })
 
         const token = generateToken({
-            token_device_id:token_device_id,
-            vtoken:vtoken
+            token_device_id:acc.token_account.token_account_id,
+            vtoken:acc.token_account.vtoken
         })
         
         response(res, {
@@ -132,6 +128,7 @@ export default {
                 token:token
             }
         }, next)
+    
     },
 
     // gera codigo aleatorio e entrega o codigo por email
@@ -148,39 +145,38 @@ export default {
         }
 
         const { email } = req.body
-        
-        const resp = await query(`select 
-            account.id, recover.expire_in, recover.expired 
-            from account left join recover on recover.account_id = account.id 
-            where email = ? and 
-            (recover.expired = 0 or recover.expired is null) 
-            order by recover.id desc limit 1;`, {
-            binds:[ email ]
+    
+        const acc = await account_repo.getAccount({
+            email: email
+        }, {
+            join:[JOIN.RECOVER],
+            order:" order by recover.id desc limit 1"
         })
 
-        if (resp.rows) {
+        if (acc.error) {
             return response(res, {
                 code:404,
                 message:'Este e-mail não está cadastrado'
             })
         }
 
-        const expir = (resp.rows as any).expire_in
-        const limitToNext = (new Date(expir)).getTime() - ((20 * 60 * 1000) - 1000 * 30)
-        console.log(Date.now());
-        console.log(limitToNext);
+        if(acc.recover && !acc.recover.expired){
+            
+            const limitToNext = (new Date(acc.recover.expire_in)).getTime() - ((20 * 60 * 1000) - 1000 * 30)
         
-        if(Date.now() < limitToNext){
-            const faltam = Math.ceil((limitToNext - Date.now()) / 1000)
-            return response(res, {
-                code:401,
-                message:`Aguarde ${faltam} segundos para solicitar um novo código`
-            })
+            if(Date.now() < limitToNext){
+                const faltam = Math.ceil((limitToNext - Date.now()) / 1000)
+                return response(res, {
+                    code:401,
+                    message:`Aguarde ${faltam} segundos para solicitar um novo código`
+                })
+            }
         }
-
-        const account_id = (resp.rows as any).id
-        const code = JWT.generateRandomCode().toUpperCase()
         
+
+        const account_id = acc.id
+        const code = JWT.generateRandomCode().toUpperCase()
+
         const execResp = await execute(`
             insert into recover (account_id, codigo, expire_in, expired)
             values(?,?,?,?) 
@@ -225,31 +221,25 @@ export default {
         const code  = (req.body as any).codigo
         const email = (req.body as any).email
 
-        const respQuery = await query(`
-            select 
-                account.nome, account.id as account_id, recover.id as recover_id, recover.expire_in 
-            from recover 
-            join account 
-                        on recover.account_id = account.id
-            where 
-                recover.codigo = ? and account.email = ? and recover.expired = 0
-        `, {
-            binds:[ code, email ]
-        })
+        const acc   = await account_repo.getAccount({
+            email:email
+        }, {
+            join:[JOIN.RECOVER],
+            where:" and recover.codigo = ? and recover.expired = 0 ",
+            values:[code]
+        }) 
 
-        if(!respQuery.rows || respQuery.error){
+        if(acc.error || !acc.recover){
             return response(res, {
                 code:404,
                 message:'Código não encontrado'
             })
         }
 
-        const dataAcc = (respQuery.rows as any)
-
-        const expire  = dataAcc.expire_in 
-        const rec_id  = dataAcc.recover_id
-        const acc_id  = dataAcc.account_id
-        const nome    = dataAcc.nome
+        const expire  = acc.recover.expire_in 
+        const rec_id  = acc.recover.recover_id
+        const acc_id  = acc.id
+        const nome    = acc.nome
 
         if(Date.now() > (new Date(expire)).getTime()){
             return response(res,{
