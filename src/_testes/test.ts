@@ -1,7 +1,7 @@
 import test_query_helper from './test_query_helper'
 import { Request, Response } from 'express'
 
-import { multiTransaction } from '../helpers/query'
+import { multiTransaction } from '../util/query'
 import repo_tests from './repo_tests'
 
 export default async () => {

@@ -1,5 +1,5 @@
 
-import Config from "../helpers/config"
+import Config from "../util/config"
 let config = Config.instance()
 let data   = config.getData()
 let conf   = config.getConf()

@@ -20,6 +20,7 @@ interface data_account_i {
 }
 
 interface data_token_i {
+    account_id:number,
     token_device_id:number,
     vtoken:number
 }
@@ -41,7 +42,7 @@ const generateToken = (data_token:data_token_i) => {
 }
 
 const generateSessionTemp = (data:data_account_i) => {
-    return JWT.generate({alg:'sha512', type:type_session.SESSION, expire_in:Date.now() + 1000 * 60 * 30}, data)
+    return JWT.generate({alg:'sha512', type:type_session.SESSION_TEMP, expire_in:Date.now() + 1000 * 60 * 30}, data)
 }
 
 const verifySession = (session:string, hash_salt:string = "", vtoken:number = 0):false|response_data_i => {
@@ -56,10 +57,14 @@ const verifySession = (session:string, hash_salt:string = "", vtoken:number = 0)
         header:data_full.header
     }
 
-    if(data_full.data.token_account_device){
-        datafinal.account = data_full.data
-    } else {
+    if(data_full.header.type == type_session.SESSION){
         datafinal.user = data_full.data
+    } else 
+    if(data_full.header.type == type_session.SESSION_TEMP){
+        datafinal.account = data_full.data
+    } else
+    if(data_full.header.type == type_session.TOKEN) {
+        datafinal.token = data_full.data
     }
 
     return datafinal

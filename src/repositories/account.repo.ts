@@ -1,5 +1,8 @@
 import { QueryResult } from "mysql2"
-import { query, execute } from "../helpers/query"
+import { query, execute, multiTransaction } from "../util/query"
+import { response_data } from "./repositories"
+
+interface data_tokens {id:number, device:string}
 
 interface recover {
     recover_id:number,
@@ -26,11 +29,6 @@ interface token_account {
     }
 }
 
-interface response_data {
-    error:boolean,
-    error_code?:number,
-    insertId?:number,
-}
 
 interface account {
     error:boolean,
@@ -95,6 +93,10 @@ const get_data_join_token_device = () => {
     `]
 }
 
+const getDateSessionTemp = () => {
+    return new Date(Date.now() + 1000 * 60 * 30)
+}
+
 const startWhere = (str_where:string) => {
     return str_where == "" ? " where " : " AND "+str_where
 }
@@ -142,6 +144,15 @@ const generateSingleRow = (rows:QueryResult):account => {
                 refresh_token:data.refresh_token,
                 device:data.device
             }
+        }
+    }
+
+    if(data.session_temp_id){
+        obj.session_temp = {
+            session_temp_id: data.session_temp_id,
+            session_value: data.session_temp_session_value,
+            expire_in: data.session_temp_expire_in,
+            used: data.session_temp_used
         }
     }
 
@@ -212,6 +223,9 @@ const account_repo = {
             binds:binds
         })
 
+        console.log(res);
+        
+
         if(res.error){
             return {
                 error:true,
@@ -226,7 +240,45 @@ const account_repo = {
 
     },
 
-    async register(nome:string, email:string, senha:string):Promise<response_data>{
+    async register(nome:string, email:string, passHash:string):Promise<response_data>{
+
+        const conn = await multiTransaction()
+        
+        const statusResp = await conn.execute('insert into account(nome, email, senha) values (?,?,?)', {
+            binds:[ nome, email, passHash ]
+        })
+
+        if(statusResp.error){
+            if(statusResp.error_code == 1062)
+                return {
+                    error:true,
+                    error_code:1062,
+                    error_message:"Este e-mail já está em uso;"
+                }
+            else
+                return {
+                    error:true,
+                    error_code:1,
+                    error_message:"Erro ao tentar salvar e-mail. Tente novamente, por favor."
+                }
+        }
+
+        const account_id = (statusResp.rows as any).insertId
+
+        const statusCreate = await conn.execute('insert into token_account(account_id, vtoken) values (?,?)', {
+            binds:[account_id, 1]
+        })
+
+        if(statusCreate.error){
+            return {
+                error:true,
+                error_code:2,
+                error_message:"Erro ao tentar salvar e-mail. Tente novamente, por favor."
+            }
+        }
+
+        conn.finish()
+        
         return {
             error:false
         }
@@ -239,23 +291,158 @@ const account_repo = {
                 values(?,?,?,?)`,{
                     binds:[token_account_id, hash_salt, refresh_token, device]
                 })
-        
-        if(!respIns)
-            return {
-                error:true
-            }
        
         return {
-            error:false
+            error:respIns.error
         }
     },
 
-    async registerRecover():Promise<response_data>{
+    async registerSessionTemp(account_id:number, session_value:string):Promise<response_data>{
+        
+        const execRespSess = await execute(`
+            insert into session_temp(account_id, session_value, expire_in, used)
+            values (?,?,?,?)
+        `, {
+            binds: [account_id, session_value, getDateSessionTemp(), 0]
+        })
+
         return {
-            error:false
+            error:execRespSess.error
         }
     },
 
+    async registerNewRecoverCode(account_id:number, codigo:string, expire_in:Date):Promise<response_data>{
+        
+        const execResp = await execute(`
+            insert into recover (account_id, codigo, expire_in, expired)
+            values(?,?,?,?) 
+        `, {
+            binds:[account_id, codigo, expire_in, 0]
+        })
+
+        return {
+            error:execResp.error
+        }
+    },
+
+    async expireSessionTemp(account_id:number, session_temp_id:number):Promise<response_data> {
+        const expireTemp = await execute(
+            'update session_temp set used = 1 where account_id = ? and id = ?'
+        , {
+            binds:[account_id, session_temp_id]
+        })
+        return {
+            error: expireTemp.error
+        }
+    },
+
+    async expireRecoverCode(recover_id:number):Promise<response_data>{
+
+        const updateRec = await execute('update recover set expired = 1 where id = ?',{
+            binds:[recover_id]
+        })
+
+        return {
+            error:updateRec.error
+        }
+    },
+
+    async updateVToken(account_id:number):Promise<response_data>{
+
+        const updateVTok = await execute('update token_account set vtoken = vtoken + 1 where account_id = ?', {
+            binds:[account_id]
+        })
+
+        return {
+            error:updateVTok.error
+        }
+
+    },
+
+    async deleteTokens(account_id:number, tokens_id:number[]):Promise<response_data>{
+
+        const placeholders = tokens_id.map(() => '?').join(',');
+        const binds = [ account_id ]
+        binds.push(...tokens_id)
+
+        const deleteTokens = await query(`
+            delete from token_device_account 
+            join token_account on token_account.id = token_device_account.token_account_id
+            join account on account.id = token_account.account_id
+            where 
+                account.id = ?
+            and 
+                token_device_account.id in (${placeholders})
+        `, {
+            binds:binds
+        })
+
+        return {
+            error:deleteTokens.error
+        }
+    },
+
+    async getListTokens( account_id:number):Promise<data_tokens[]|false>{
+
+        const listQuery = await query(`
+            select
+                token_device_account.id,
+                token_device_account.device 
+            from token_device_account 
+                join token_account on token_account.id = token_device_account.token_account_id
+                join account on account.id = token_account.account_id
+            where 
+                account.id = ?
+        `, {
+            binds:[account_id]
+        })
+
+        console.log(listQuery);
+        
+
+        return listQuery.error ? false : (listQuery.rows as data_tokens[])
+
+    },
+
+    async update(data:{nome?:string, email?:string, senha?:string }, account_id:number):Promise<response_data>{
+
+        if(!data.nome && !data.email && !data.senha){
+            return {
+                error_code:400,
+                error:true
+            }
+        }
+        
+        const binds:any[] = []
+        let sqlinsert = "update account set ";
+
+        if(data.nome){
+            sqlinsert += " nome = ?, "
+            binds.push(data.nome)
+        }
+
+        if(data.email) {
+            sqlinsert += " email = ?, "
+            binds.push(data.email)
+        }
+
+        if(data.senha) {
+            sqlinsert += " senha = ?, "
+            binds.push(data.senha)
+        }
+
+        sqlinsert = sqlinsert.substring(0, sqlinsert.length - 2)
+        sqlinsert += " where id = ? "
+        binds.push(account_id)
+
+        const statusExec  = await execute(sqlinsert, {
+            binds:binds
+        })
+
+        return {
+            error:statusExec.error
+        }
+    }
 
 }
 

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express'
-import { type_user } from '../model/User'
 import Authorization from '../model/Authorization'
 
 

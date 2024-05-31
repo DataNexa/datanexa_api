@@ -1,7 +1,7 @@
 import {Request, Response, NextFunction} from 'express'
 
-import response from '../helpers/response'
-import authorization from '../helpers/autorization'
+import response from '../util/response'
+import authorization from '../util/autorization'
 
 export default {
 

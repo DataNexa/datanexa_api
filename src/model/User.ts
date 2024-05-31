@@ -30,6 +30,9 @@ class User {
     private token_device_id:number|undefined
     private vtoken:number|undefined
     private newSession:boolean = false
+    private nome:string = ''
+    private email:string = ''
+    private encPass:string = ''
 
     public getAccountId() {
         return this.account_id
@@ -89,6 +92,31 @@ class User {
         this.vtoken = vtoken
     }
 
+    public setNome(nome:string) {
+        this.nome = nome
+    }
+
+    public setEmail(email:string){
+        this.email = email
+    }
+
+    public setEncPass(senha:string){
+        this.encPass = senha
+    }
+
+
+    public getNome(){
+        return this.nome
+    }
+
+    public getEmail(){
+        return this.email
+    }
+
+    public getEncPass(){
+        return this.encPass
+    }
+
     public getJSON():user_i {
         return {
             account_id:this.account_id,
@@ -107,6 +135,10 @@ class User {
 
     public getSession(){
         return this.session
+    }
+
+    public getSessionTemp(){
+        return this.session_temp
     }
     
 }

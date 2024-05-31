@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import response from '../helpers/response';
+import response from '../util/response';
 
 export default {
 

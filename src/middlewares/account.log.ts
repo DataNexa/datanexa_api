@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import saveLog from '../helpers/logger'
+import saveLog from '../util/logger'
 
 export default {
 
@@ -27,7 +27,7 @@ export default {
     },
 
     editou:(req:Request, res:Response) => {
-        const infos = res.dataBody.infos
+        const infos = res.dataBody
         saveLog(`account@edit`, `Usuário da conta id: '${res.user.getAccountId()}' alterou informações de ${infos}`)
     },
 
@@ -36,7 +36,7 @@ export default {
     },
 
     deletouTokens: (req:Request, res:Response) => {
-        const total_tokens = res.dataBody.total
+        const total_tokens = res.dataBody
         saveLog(`account@deleteTokenDevice`, `da conta id: '${res.user.getAccountId()}' deletou um total ${total_tokens} tokens`)
     },
 

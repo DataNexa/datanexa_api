@@ -1,4 +1,4 @@
-import { mysqli, RowDataPacket, QueryError, QueryResult, Pool, PoolConnection } from "./mysqli"
+import { mysqli, QueryResult, PoolConnection } from "./mysqli"
 import globals from "../config/globals"
 import { NextFunction, Response } from 'express'
 import response from "./response"
@@ -10,12 +10,6 @@ interface response_query {
     rows:QueryResult
 }
 
-interface response_exec {
-    error:boolean,
-    error_code?:number,
-    error_message?:string,
-    info:QueryResult
-}
 
 interface query_obj {
     table:string,

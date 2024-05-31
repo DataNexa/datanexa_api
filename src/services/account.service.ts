@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from 'express'
-import response from '../helpers/response';
+import response from '../util/response';
 import { body, validationResult } from 'express-validator';
-import { query, execute, multiTransaction } from '../helpers/query';
+import { execute } from '../util/query';
 import JWT from '../model/JWT';
 import { generateSessionTemp, generateToken } from '../model/session_manager';
 import globals from '../config/globals';
 import { account_repo, JOIN } from '../repositories/account.repo';
+import { user_repo } from '../repositories/user.repo';
+
+
 
 export default {
 
@@ -27,41 +30,17 @@ export default {
 
         const passHash = await JWT.cryptPassword(senha)
 
-        const conn = await multiTransaction()
-        
-        const statusResp = await conn.execute('insert into account(nome, email, senha) values (?,?,?)', {
-            binds:[ nome, email, passHash ]
-        })
+        const statusAdd = await account_repo.register(nome, email, passHash)
 
-        if(statusResp.error){
-            if(statusResp.error_code == 1062)
-                return response(res, {
-                    code: 500,
-                    message: 'Este e-mail já está em uso'
-                })
-            else
-                return response(res, {
-                    code: 500,
-                    message: 'Erro ao tentar salvar e-mail. Tente novamente, por favor.'
-                })
-        }
-
-        const account_id = (statusResp.rows as any[])[0].insertId
-
-        const statusCreate = await conn.execute('insert into token_account(account_id, vtoken) values (?,?)', {
-            binds:[account_id, 1]
-        })
-
-        if(statusCreate.error){
+        if(statusAdd.error)
             return response(res, {
                 code: 500,
-                message: 'Erro ao tentar salvar e-mail. Tente novamente, por favor.'
+                message: statusAdd.error_message
             })
-        }
 
-        conn.finish()
-
-        response(res)
+        response(res, {
+            code:200
+        }, next)
 
     },
 
@@ -101,8 +80,8 @@ export default {
         }
 
         const device        = req.headers['user-agent'] ? req.headers['user-agent'] : ''
-        const refresh_token = JWT.newToken(`${acc.id}refresh_token`, 'sha512')
-        const hash_salt     = JWT.newToken(`${acc.id}hash_salt`)
+        const refresh_token = JWT.newToken(`${acc.id}refresh_token${Date.now()}`, 'sha512')
+        const hash_salt     = JWT.newToken(`${acc.id}hash_salt${Date.now()}`)
 
         const response_register = await account_repo.registerToken(
             acc.token_account.token_account_id,
@@ -118,6 +97,7 @@ export default {
             })
 
         const token = generateToken({
+            account_id:acc.id,
             token_device_id:acc.token_account.token_account_id,
             vtoken:acc.token_account.vtoken
         })
@@ -176,13 +156,9 @@ export default {
 
         const account_id = acc.id
         const code = JWT.generateRandomCode().toUpperCase()
+        const expirein = new Date(Date.now() + (1000 * 60 * 20))
 
-        const execResp = await execute(`
-            insert into recover (account_id, codigo, expire_in, expired)
-            values(?,?,?,?) 
-        `, {
-            binds:[account_id, code, new Date(Date.now() + (1000 * 60 * 20)), 0]
-        })
+        const execResp = await account_repo.registerNewRecoverCode(account_id, code, expirein)
 
         if(execResp.error){
             return response(res, {
@@ -253,15 +229,22 @@ export default {
             account_id:acc_id
         })
 
-        const updateRec = await execute('update recover set expired = 1 where id = ?',{
-            binds:[rec_id]
-        })
+        const updateRec = await account_repo.expireRecoverCode(rec_id)
 
         if(updateRec.error){
            return response(res, {
             code:500,
-            message:'erro no servidor'
+            message:'erro ao tentar alterar status recover'
            }) 
+        }
+
+        const regSess = await account_repo.registerSessionTemp(acc_id, session_temp)
+
+        if(regSess.error){
+            return response(res, {
+                code:500,
+                message:'erro ao registrar sessão'
+               }) 
         }
 
         response(res, {
@@ -274,37 +257,143 @@ export default {
     },
 
     // É necessário uma sessão temporária para editar dados sensiveis
-    edit:(req:Request, res:Response, next:NextFunction) => {
+    edit:async (req:Request, res:Response, next:NextFunction) => {
 
+        res.dataBody = ""
+        if(req.body.senha){
+            res.dataBody += " :senha: "
+            await body('senha').isString().isLength({min:6}).trim().run(req)
+            req.body.senha = await JWT.cryptPassword(req.body.senha)
+        }
+
+        if(req.body.email){
+            res.dataBody += " :email: "
+            await body('email').isEmail().trim().run(req)
+        }
+
+        if(req.body.nome){
+            res.dataBody += " :nome: "
+            await body('nome').isString().isLength({min:3}).trim().run(req)
+        }
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return response(res, {
+                code: 400,
+                message: 'Requisição Inválida'
+            })
+        }
         
+        const statusAccount = await account_repo.update(req.body, res.user.getAccountId())        
+
+        if(statusAccount.error){
+            return response(res, {
+                code: 500
+            }, next)
+        }
+
+        response(res, {code:200}, next)
 
     },
 
     // adiciona +1 ao vtoken
     // É necessário uma sessão temporária para expirar todas as sessões
-    expireAllSessions: (req:Request, res:Response, next:NextFunction) => {
+    expireAllSessions: async (req:Request, res:Response, next:NextFunction) => {
+
+        const sessTemp = await account_repo.updateVToken(res.user.getAccountId())
+        response(res, {
+            code: sessTemp.error ? 401 : 200
+        })
 
     },
 
     // é necessário uma sessão temporária para deletar tokens
-    deleteTokenDevice: (req:Request, res:Response, next:NextFunction) => {
+    deleteTokenDevice: async (req:Request, res:Response, next:NextFunction) => {
+        
+        body('tokens')
+            .isArray({min:1})
+            .custom((array) => array.every((item: any) => typeof item === 'number'))
+            .run(req)
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return response(res, {
+                code: 400,
+                message: 'Requisição Inválida'
+            })
+        }
+
+        const {tokens} = req.body
+
+        const deleteTokens = await account_repo.deleteTokens(res.user.getAccountId(), tokens)
+
+        response(res, {
+            code: deleteTokens.error ? 401 : 200
+        })
 
     },
 
     // listar todos os aparelhos conectados à conta
     // é necessário uma sessão temporaria
-    listTokenDevice: (req:Request, res:Response) => {
+    listTokenDevice: async (req:Request, res:Response) => {
+        
+        const responseTokens = await account_repo.getListTokens(res.user.getAccountId())
+        if(!responseTokens){
+            return response(res, {
+                code:401
+            })
+        }
+
+        response(res, {
+            code:200,
+            body:{
+                tokens:responseTokens
+            }
+        })
 
     },
 
-    // gera uma sessão temporária usando token e senha
-    createTempSession:(req:Request, res:Response) => {
+    // gera uma sessão temporária usando token, email e senha
+    createTempSession: async (req:Request, res:Response) => {
+        
+        const session_temp = generateSessionTemp({
+            nome:res.user.getNome(),
+            account_id:res.user.getAccountId()
+        })
+
+        const resultSess = await account_repo.registerSessionTemp(res.user.getAccountId(), session_temp)
+        
+        if(resultSess.error){
+            return response(res, {
+                code:500,
+                message:'Erro ao tentar gerar uma sessão temporária'
+            })
+        }
+        
+        response(res, {
+            code:200,
+            body:{
+                session_temp:session_temp
+            }
+        })
 
     },
 
     // lista usuários da conta
     // necessário o token 
-    listUsersAccount:(req:Request, res:Response) => {
+    listUsersAccount: async (req:Request, res:Response) => {
+
+        const responseList = await user_repo.list(res.user.getAccountId())
+        if(!responseList){
+            return response(res, {
+                code:500,
+                message:'Ocorreu algum erro no servidor'
+            })
+        }
+        response(res, {
+            code:200,
+            body:responseList
+        })
 
     }
 
