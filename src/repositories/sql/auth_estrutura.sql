@@ -21,6 +21,8 @@ create table if not exists user (
     slug varchar(250) not null unique,
     account_id bigint(255) not null,
     ativo tinyint(1) default 1,
+    tipo_usuario tinyint(1) not null,
+    accepted tinyint(1) default 0,
 
     foreign key(account_id) 
         references account(id),

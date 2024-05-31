@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import response from '../util/response';
 import { body, validationResult } from 'express-validator';
-import { execute } from '../util/query';
 import JWT from '../model/JWT';
 import { generateSessionTemp, generateToken } from '../model/session_manager';
 import globals from '../config/globals';

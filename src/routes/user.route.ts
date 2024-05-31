@@ -1,12 +1,12 @@
 import { Router } from "express";
-import account_service from "../services/account.service";
-import account_auth from "../middlewares/account.auth";
-import account_log from '../middlewares/account.log'
+import user_service from "../services/user.service";
+import user_auth from "../middlewares/user.auth";
+import user_log from '../middlewares/user.log'
 
 const router = Router()
 
 export default () => {
-    router.get('/login', account_service.login, account_log.login)
-    router.post('/createUser', authMid.createUserMid, account.createUser)
+    router.post('/openSession', user_auth.withToken, user_service.openSession)
+    router.get('/getDataUser', user_auth.isNotAnonimous, user_service.getDataUser)
     return router
 }

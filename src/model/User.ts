@@ -1,5 +1,5 @@
 enum type_user {
-    GHOST, ADMIN, ADMIN_CLIENT, USER_CLIENT, ANONIMUS
+    ANONIMUS, GHOST, ADMIN, ADMIN_CLIENT, USER_CLIENT
 }
 
 interface user_i {
@@ -27,8 +27,8 @@ class User {
     private permissions:string[] = []
     private client_id:number|undefined
     private token_account:string|undefined
-    private token_device_id:number|undefined
-    private vtoken:number|undefined
+    private token_device_id:number = 0
+    private vtoken:number = 0
     private newSession:boolean = false
     private nome:string = ''
     private email:string = ''
@@ -113,8 +113,24 @@ class User {
         return this.email
     }
 
+    public getSlug(){
+        return this.slug
+    }
+
     public getEncPass(){
         return this.encPass
+    }
+
+    public getVToken(){
+        return this.vtoken
+    }
+
+    public getUserTokenDeviceId(){
+        return this.token_device_id
+    }
+
+    public getTypeUser(){
+        return this.type_user
     }
 
     public getJSON():user_i {

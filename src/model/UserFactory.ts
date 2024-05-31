@@ -1,33 +1,36 @@
 import { User } from "./User";
 import { Request, Response, NextFunction } from "express"
 
-import { type_session, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, generateToken } from "./session_manager";
+import { type_session, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, getDataSession, generateToken } from "./session_manager";
 import response from "../util/response";
 import { account_repo, JOIN } from "../repositories/account.repo";
+import { user_repo } from "../repositories/user.repo";
 
-const generateUser = async (dataUser:data_user_i, header:header_i, user:User):Promise<boolean> => {
+const generateUser = async (session:string, dataUser:data_user_i, header:header_i, user:User):Promise<boolean> => {
 
-    const token_device_id = dataUser.token_device_id
-    // user token_device_id para resgatar o vtoken e o hash_salt
-    const vtoken_db = 1 // resgatado no banco de dados
-    const hash_salt = "saltdfkj"
+    const userDB = await user_repo.getDataFromSession(dataUser.user_id)
+    if(!userDB) return false
 
-    if(vtoken_db != dataUser.vtoken){
+    if(userDB.vtoken != dataUser.vtoken){
+        return false
+    }
+
+    if(!verifySession(session, userDB.hash_salt, userDB.vtoken)){
         return false
     }
 
     let hasNewSession = header.type == type_session.SESSION && header.expire_in - Date.now() <  1000 * 60 * 30
     if(hasNewSession){
-        user.setSession(generateSession(dataUser, hash_salt, vtoken_db), true)
+        user.setSession(generateSession(dataUser, userDB.hash_salt), true)
     }
     
+    user.setNome(userDB.nome)
+    user.setEmail(userDB.email)
     user.setTypeUser(dataUser.user_type)
     user.setId(dataUser.user_id)
     user.setSlug(dataUser.slug)
     user.setTokenDeviceId(dataUser.token_device_id)
-
-    // iserir outros dados do usuario como permissões, etc
-
+    
     return true
 
 }
@@ -96,20 +99,23 @@ export default async (req:Request, res:Response, next:NextFunction) => {
 
     if(sess){
         
-        const dataUser = verifySession(sess)
-       
-        if(dataUser && dataUser.user && dataUser.header.type == type_session.SESSION){
-            
+        const dataSess = getDataSession(sess)
+
+        if(dataSess.header.type == type_session.SESSION){
+
             user.setSession(sess)
 
-            let status = await generateUser(dataUser.user, dataUser.header, user)
+            let status = await generateUser(sess, dataSess.user, dataSess.header, user)
             if(!status){
                 return response(res,{
                     code: 401
                 }, next)
             }
+            return next()
+        }
 
-        } else
+        const dataUser = verifySession(sess)
+        
         if(dataUser && dataUser.account && dataUser.header.type == type_session.SESSION_TEMP){
             
             user.setSessionTemp(sess)
