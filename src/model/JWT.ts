@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import globals from '../config/globals'
+import * as bcrypt from 'bcrypt';
 
 interface header {
     alg:string,
@@ -43,12 +44,37 @@ export default {
         } catch(e){
             return false
         }
-        
+
     },
 
-    newToken: function(token_account_hash:string, token_account_device:string){
-        const now = new Date().toString();
-        return crypto.createHmac('sha256', now+token_account_hash+token_account_device)
-    }   
+    newToken: function(value:string, alg:string='sha256', salt:string = ''):string{
+        const hash = crypto.createHash(alg)
+        hash.update(value+salt)
+        return hash.digest('hex')
+    },
+
+    cryptPassword: (password: string):Promise<string> =>{
+        return bcrypt.genSalt(10)
+        .then((salt => bcrypt.hash(password, salt)))
+        .then(hash => hash)
+    },  
+    
+    comparePassword: (password: string, hashPassword: string):Promise<boolean> => {
+        return bcrypt.compare(password, hashPassword)
+        .then(resp => resp)
+    },
+
+    generateRandomCode: (length: number = 6): string => {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            result += characters[randomIndex];
+        }
+        
+        return result;
+    }
+        
 
 }

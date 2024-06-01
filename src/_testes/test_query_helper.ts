@@ -1,8 +1,4 @@
-import query from "../helpers/query";
-import { generateSession,verifySession, type_session, generateToken } from "../model/session_manager";
-
+import saveLog from "../util/logger"
 export default async () => {
-
-    
-   
+    saveLog('account@test', 'deu certo com id user!', 1)  
 }
