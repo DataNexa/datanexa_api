@@ -1,14 +1,35 @@
 import { User } from "./User";
 import { Request, Response, NextFunction } from "express"
 
-import { type_session, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, getDataSession, generateToken } from "./session_manager";
+import { type_session, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, getDataSession, generateToken, data_user_full_i } from "./session_manager";
 import response from "../util/response";
 import { account_repo, JOIN } from "../repositories/account.repo";
-import { user_repo } from "../repositories/user.repo";
+import { user_repo, user_token_account } from "../repositories/user.repo";
+import cache from "./cache";
+
+const addDataUser = async (dataUser:data_user_full_i, user:User, save:boolean = false) => {
+
+    user.setNome(dataUser.nome)
+    user.setEmail(dataUser.email)
+    user.setTypeUser(dataUser.user_type)
+    user.setId(dataUser.user_id)
+    user.setSlug(dataUser.slug)
+    user.setTokenDeviceId(dataUser.token_device_id)
+
+    if(save) return await cache.saveDataUser(dataUser)
+    return true
+
+}
 
 const generateUser = async (session:string, dataUser:data_user_i, header:header_i, user:User):Promise<boolean> => {
 
-    const userDB = await user_repo.getDataFromSession(dataUser.user_id)
+    let userDB:user_token_account|data_user_full_i|false|undefined = await cache.getDataUser(dataUser.user_id)
+    let save = false
+    if(!userDB) {
+        save = true
+        userDB = await user_repo.getDataFromSession(dataUser.user_id)
+    } 
+
     if(!userDB) return false
 
     if(userDB.vtoken != dataUser.vtoken){
@@ -24,14 +45,7 @@ const generateUser = async (session:string, dataUser:data_user_i, header:header_
         user.setSession(generateSession(dataUser, userDB.hash_salt), true)
     }
     
-    user.setNome(userDB.nome)
-    user.setEmail(userDB.email)
-    user.setTypeUser(dataUser.user_type)
-    user.setId(dataUser.user_id)
-    user.setSlug(dataUser.slug)
-    user.setTokenDeviceId(dataUser.token_device_id)
-    
-    return true
+    return await addDataUser(userDB as data_user_full_i, user, save)
 
 }
 

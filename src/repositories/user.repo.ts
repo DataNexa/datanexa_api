@@ -5,7 +5,7 @@ interface user_basic_response { slug:string, accepted:number }
 
 interface user_token_account {
     email:string,
-    id: number,
+    user_id: number,
     slug: string,
     tipo_usuario: type_user,
     nome: string,
@@ -31,7 +31,7 @@ const user_repo = {
 
         const resUser = await query(`
             select 
-                user.id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
+                user.id as user_id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
                 account.nome, account.email,
                 token_account.vtoken, token_device_account.hash_salt
             from 
@@ -56,7 +56,7 @@ const user_repo = {
 
         const respReqUser = await query(`
         select 
-                user.id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
+                user.id as user_id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
                 account.nome, account.email,
                 token_account.vtoken, token_device_account.hash_salt
             from 
@@ -78,4 +78,4 @@ const user_repo = {
 
 }
 
-export { user_repo }
+export { user_repo, user_token_account }

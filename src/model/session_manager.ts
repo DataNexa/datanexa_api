@@ -1,4 +1,6 @@
 import JWT from "./JWT";
+import { type_user } from "./User";
+
 
 enum type_session {
     SESSION,
@@ -9,9 +11,15 @@ enum type_session {
 interface data_user_i {
     user_id:number,
     slug:string,
-    user_type:string,
+    user_type:type_user,
     token_device_id:number,
     vtoken:number
+}
+
+interface data_user_full_i extends data_user_i{
+    nome:string,
+    email:string,
+    hash_salt:string
 }
 
 interface data_account_i {
@@ -86,4 +94,4 @@ const verifySession = (session:string, hash_salt:string = "", vtoken:number = 0)
     
 }
 
-export { type_session, data_account_i, data_user_i, data_token_i, header_i, getDataSession, generateSession, verifySession, generateToken, generateSessionTemp}
+export { type_session, data_account_i, data_user_i, data_token_i, header_i, data_user_full_i, getDataSession, generateSession, verifySession, generateToken, generateSessionTemp}

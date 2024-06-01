@@ -3,7 +3,6 @@ import response from '../util/response';
 import { body, validationResult } from 'express-validator';
 import { generateSession, type_session } from '../model/session_manager';
 import { user_repo } from '../repositories/user.repo';
-import { type_user } from '../model/User';
 
 export default {
 
@@ -37,9 +36,9 @@ export default {
         }
         
         const obj = {
-            user_id: userReg.id,
+            user_id: userReg.user_id,
             slug:userReg.slug,
-            user_type:type_user[userReg.tipo_usuario],
+            user_type:userReg.tipo_usuario,
             token_device_id:res.user.getUserTokenDeviceId(),
             vtoken:userReg.vtoken
         }

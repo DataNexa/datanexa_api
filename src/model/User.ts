@@ -5,7 +5,7 @@ enum type_user {
 interface user_i {
     account_id:number,
     user_id:number,
-    type_user:string,
+    type_user:type_user,
     temp:string|undefined,
     session:string|undefined,
     slug:string|undefined,
@@ -46,9 +46,8 @@ class User {
         return this.newSession
     }
 
-    public setTypeUser(type:string){
-        if(["GHOST", "ADMIN", "ADMIN_CLIENT", "USER_CLIENT", "ANONIMUS"].includes(type))
-        this.type_user = type_user[type as keyof typeof type_user]
+    public setTypeUser(type:type_user){
+        this.type_user = type
     }
 
     public setSession(session:string, isNew:boolean = false){
@@ -137,7 +136,7 @@ class User {
         return {
             account_id:this.account_id,
             user_id:this.user_id,
-            type_user:type_user[this.type_user],
+            type_user:this.type_user,
             temp:this.session_temp,
             session:this.session,
             slug:this.slug,
