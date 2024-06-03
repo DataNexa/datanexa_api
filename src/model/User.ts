@@ -103,7 +103,6 @@ class User {
         this.encPass = senha
     }
 
-
     public getNome(){
         return this.nome
     }
@@ -130,6 +129,14 @@ class User {
 
     public getTypeUser(){
         return this.type_user
+    }
+
+    public getPermissions(){
+        return this.permissions
+    }
+
+    public getClientId(){
+        return this.client_id
     }
 
     public getJSON():user_i {

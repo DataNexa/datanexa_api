@@ -5,4 +5,9 @@ interface response_data {
     insertId?:number,
 }
 
-export { response_data }
+interface result_exec {
+    insertId:number,
+    affectedRows:number
+}
+
+export { response_data, result_exec }

@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import { data_user_i, data_user_full_i } from "./session_manager";
+import { data_user_full_i } from "./session_manager";
 const redis = new Redis()
 
 const quit =  () => redis.quit().then(() => process.exit(0)).catch(() => process.exit(1))
