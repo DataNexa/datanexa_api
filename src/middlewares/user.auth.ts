@@ -1,7 +1,6 @@
 import {Request, Response, NextFunction} from 'express'
 
 import response from '../util/response'
-import authorization from '../util/autorization'
 import { type_user } from '../model/User'
 
 export default {

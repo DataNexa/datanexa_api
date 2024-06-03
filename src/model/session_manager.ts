@@ -19,7 +19,9 @@ interface data_user_i {
 interface data_user_full_i extends data_user_i{
     nome:string,
     email:string,
-    hash_salt:string
+    hash_salt:string,
+    client_id?:number|null,
+    permissions:string[]
 }
 
 interface data_account_i {

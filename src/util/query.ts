@@ -104,7 +104,7 @@ class MultiTransaction {
         }
     }
 
-    private async rollBack(){
+    public async rollBack(){
         if(!this.conn) return
         await this.conn.rollback()
         this.conn.release();

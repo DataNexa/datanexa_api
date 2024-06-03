@@ -15,6 +15,9 @@ const addDataUser = async (dataUser:data_user_full_i, user:User, save:boolean = 
     user.setId(dataUser.user_id)
     user.setSlug(dataUser.slug)
     user.setTokenDeviceId(dataUser.token_device_id)
+    user.setPermissions(dataUser.permissions)
+
+    if(dataUser.client_id) user.setClientId(dataUser.client_id)
 
     if(save) return await cache.saveDataUser(dataUser)
     return true

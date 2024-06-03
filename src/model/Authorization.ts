@@ -23,7 +23,7 @@ class Authorization {
     }
 
     onlyAdmin():boolean|void {
-        const status = type_user[type_user.ADMIN] == this.res.user.getJSON().type_user
+        const status = type_user.ADMIN == this.res.user.getTypeUser()
         if(this.next) {
             return status ? this.next() : response(this.res, {code:401, message:this.unauthorizedMessage})
         }
@@ -31,9 +31,8 @@ class Authorization {
     }
 
     onlyClientAdmin():boolean|void {
-        const userData = this.res.user.getJSON()
         const client_id_sended = parseInt(this.req.params.client_id)
-        const status = type_user[type_user.ADMIN_CLIENT] == userData.type_user && client_id_sended == userData.client_id
+        const status = type_user.ADMIN_CLIENT == this.res.user.getTypeUser() && client_id_sended == this.res.user.getClientId()
         if(this.next) {
             return status ? this.next() : response(this.res, {code:401, message:this.unauthorizedMessage})
         }
@@ -41,12 +40,16 @@ class Authorization {
     }
 
     onlyUserClient():boolean|void {
-        const userData = this.res.user.getJSON()
+
         const client_id_sended = parseInt(this.req.params.client_id)
         let status = false
-        if(type_user[type_user.USER_CLIENT] == userData.type_user && client_id_sended == userData.client_id){
-            for(const permission in userData.permissions){
+        
+        if(type_user.USER_CLIENT == this.res.user.getTypeUser() 
+            && client_id_sended == this.res.user.getClientId()
+        ){
+            for(const permission of this.res.user.getPermissions()){
                 if(this.permissions.includes(permission)){
+                    console.log("aqui");
                     status = true 
                     break
                 }
@@ -59,17 +62,17 @@ class Authorization {
     }
 
     anyAdmins():boolean|void {
-        const userData = this.res.user.getJSON()
+
         const client_id_sended = parseInt(this.req.params.client_id)
 
-        if(type_user[type_user.ADMIN] == userData.type_user){
+        if(type_user.ADMIN == this.res.user.getTypeUser()){
             if(this.next) {
                 return this.next()
             }
             return true
         }
 
-        if(type_user[type_user.ADMIN_CLIENT] == userData.type_user && client_id_sended == userData.client_id){
+        if(type_user.ADMIN_CLIENT == this.res.user.getTypeUser() && client_id_sended == this.res.user.getClientId()){
             if(this.next) {
                 return this.next()
             }
@@ -83,26 +86,28 @@ class Authorization {
 
     anyUserAuthorized():boolean|void{
         
-        const userData = this.res.user.getJSON()
         const client_id_sended = parseInt(this.req.params.client_id)
 
-        if(type_user[type_user.ADMIN] == userData.type_user){
+        if(type_user.ADMIN == this.res.user.getTypeUser()){
             if(this.next) {
                 return this.next()
             }
             return true
         }
 
-        if(type_user[type_user.ADMIN_CLIENT] == userData.type_user && client_id_sended == userData.client_id){
+        if(type_user.ADMIN_CLIENT == this.res.user.getTypeUser() && client_id_sended == this.res.user.getClientId()){
             if(this.next) {
                 return this.next()
             }
             return true
         }
 
-        if(type_user[type_user.USER_CLIENT] == userData.type_user && client_id_sended == userData.client_id){
-            for(const permission in userData.permissions){
+        if(type_user.USER_CLIENT == this.res.user.getTypeUser() && client_id_sended == this.res.user.getClientId()){
+            for(const permission of this.res.user.getPermissions()){
                 if(this.permissions.includes(permission)){
+                    if(this.next) {
+                        return this.next()
+                    }
                     return true
                 }
             }

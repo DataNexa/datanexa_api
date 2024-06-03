@@ -1,5 +1,6 @@
-import { execute, query } from "../util/query"
+import { execute, query, multiTransaction } from "../util/query"
 import { type_user } from "../model/User"
+import { result_exec } from "./repositories"
 
 interface user_basic_response { slug:string, accepted:number }
 
@@ -12,7 +13,9 @@ interface user_token_account {
     vtoken: number,
     hash_salt: string,
     ativo:number,
-    accepted:number
+    accepted:number,
+    client_id?:number|null,
+    permissions:string[]
 }
 
 const user_repo = {
@@ -32,6 +35,7 @@ const user_repo = {
         const resUser = await query(`
             select 
                 user.id as user_id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
+                client.id as client_id,
                 account.nome, account.email,
                 token_account.vtoken, token_device_account.hash_salt
             from 
@@ -39,6 +43,8 @@ const user_repo = {
             join account on account.id = user.account_id
             join token_account on token_account.account_id = account.id
             join token_device_account on token_device_account.token_account_id = token_account.id
+            left join user_client on user.id = user_client.user_id 
+            left join client on user_client.client_id = client.id
             where 
                 token_device_account.id = ? and account.id = ? and user.slug = ?
 
@@ -48,8 +54,30 @@ const user_repo = {
 
         const result = (resUser.rows as user_token_account[])
 
-        return result.length == 0 ? undefined : result[0]
-        
+        if(result.length == 0){
+            return undefined
+        }
+
+        const user_full = result[0]
+
+        const permissionsSel = await query(`
+            select service_actions.slug
+              from user_permission
+                join 
+                    service_actions on user_permission.service_action_id = service_actions.id
+                join
+                    services on service_actions.service_id = services.id
+            where 
+                user_permission.user_id = ? and services.is_public = 1 and service_actions.ativo = 1    
+        `, {
+            binds:[user_full.user_id]
+        })
+
+        let permissions = permissionsSel.rows as {slug:string}[]
+        user_full.permissions = permissions.length == 0 ? [] : permissions.map(val => val.slug)
+
+        return user_full
+
     },
 
     getDataFromSession: async (user_id:number):Promise<user_token_account|undefined> => {
@@ -74,6 +102,91 @@ const user_repo = {
 
         return dataResp[0]
 
+    },
+
+    checkServiceAction: async (service_actions:number[]):Promise<boolean> => {
+        
+        const q = await query("select service_actions.id from service_actions join services on services.id = service_actions.service_id where services.is_public = 1")
+        if(q.error){
+            return false
+        }
+
+        const ids:number[] = (q.rows as { id:number }[]).map( v => v.id )
+
+        for(let service of service_actions){
+            if(!ids.includes(service)){
+                return false
+            }
+        }
+
+        return true
+
+    },
+
+    register: async (slug:string, permissions:number[], email:string, tipo_usuario:type_user, client_id?:number) => {
+
+        const conn = await multiTransaction()
+
+        const resp = await conn.query('select id from account where email = ?', {
+            binds:[email]
+        })
+
+        if(resp.error || (resp.rows as any[]).length == 0){
+            conn.finish()
+            return false
+        }
+
+        const account_id = (resp.rows as {id:number}[])[0].id
+
+        // salva usuario
+
+        const saveUser = await conn.execute(`
+            insert into user(slug, account_id, ativo, tipo_usuario, accepted) 
+            values (?,?,?,?,?)
+        `, {
+            binds:[slug, account_id, 1, tipo_usuario, 0]
+        })
+
+
+        if(saveUser.error){
+            return false
+        }
+
+        const user_id = (saveUser.rows as result_exec).insertId
+
+        // vincula o usuário ao cliente se houver
+
+        if(client_id){
+
+            const clientuserExec = await conn.execute(`
+                insert into user_client (user_id, client_id) values (${user_id}, ${client_id})
+            `)
+
+            if(clientuserExec.error){
+                return false
+            }
+
+        }
+
+        // salva as permissoes publicas
+        
+        let insert = "insert into user_permission (user_id, service_action_id) values "
+        let values = ""
+
+        for (const permission_id of permissions){
+            values += `(${user_id}, ${permission_id}),`
+        }
+
+        insert += values.substring(0, values.length - 1)
+        console.log(insert);
+        
+        const savePermissions = await conn.execute(insert)
+        if(savePermissions.error) return false
+        
+        await conn.finish()
+
+        return true
+        
     }
 
 }
