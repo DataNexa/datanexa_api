@@ -49,7 +49,6 @@ class Authorization {
         ){
             for(const permission of this.res.user.getPermissions()){
                 if(this.permissions.includes(permission)){
-                    console.log("aqui");
                     status = true 
                     break
                 }
@@ -86,7 +85,7 @@ class Authorization {
 
     anyUserAuthorized():boolean|void{
         
-        const client_id_sended = parseInt(this.req.params.client_id)
+        const client_id_sended = parseInt(this.req.body.client_id)
 
         if(type_user.ADMIN == this.res.user.getTypeUser()){
             if(this.next) {

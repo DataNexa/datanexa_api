@@ -12,7 +12,7 @@ export default {
     // gera uma sessão usando a slug do usuário e o token da conta
     openSession: async (req:Request, res:Response) => {
 
-        body('slug').trim().matches(/^[a-zA-Z0-9_@]+$/).run(req)
+        await body('slug').trim().matches(/^[a-zA-Z0-9_@#]+$/).run(req)
 
         const errors = validationResult(req)
         if(!errors.isEmpty()){
@@ -105,13 +105,13 @@ export default {
         if(user.getTypeUser() == type_user.USER_CLIENT || 
             user.getTypeUser() == type_user.ADMIN_CLIENT || 
             req.body.client_id )
-            body('client_id').isInt().run(req)
+            await body('client_id').isInt().run(req)
         
-        body('service_actions').isArray({min:0}).run(req)
-        body('service_actions.*').isInt().run(req)
+        await body('service_actions').isArray({min:0}).run(req)
+        await body('service_actions.*').isInt().run(req)
 
-        body('email').isEmail().run(req)
-        body('tipo_usuario').isInt({min:1, max:4}).run(req)
+        await body('email').isEmail().run(req)
+        await body('tipo_usuario').isInt({min:1, max:4}).run(req)
 
         const errors = validationResult(req)
         if(!errors.isEmpty()){
@@ -141,13 +141,6 @@ export default {
         })
 
 
-        if(!await user_repo.checkServiceAction(b.service_actions)){
-            return response(res, {
-                code: 400,
-                message:"Ids de serviço não são válidos"
-            })
-        }
-
         let slug  = b.email.split('@')[0]+"@"
         let assig =  b.tipo_usuario == type_user.ADMIN ? 'admin' : 'ghost'
         if(b.client_id) {
@@ -175,39 +168,106 @@ export default {
 
     // cria/edita as permissões e o tipo de usuário 
     // apenas usuários com permissão
-    addPermissionsUser: (req:Request, res:Response) => {
+    updatePermissionsUser: async (req:Request, res:Response) => {
 
         // algoritmo vai deletar todas as permissões do usuário e adicionar novamente
         // se o service_actions vier vazio, apenas deletar as permissões
 
-        body('service_actions').isArray({min:0}).run(req)
-        body('service_actions.*').isInt().run(req)
-        body('user_id').isInt({min:1}).run(req)
+        await body('service_actions').isArray({min:0}).run(req)
+        await body('service_actions.*').isInt().run(req)
+        await body('user_id').isInt({min:1}).run(req)
         // usuarios de nivel client compermissões só podem alterar usuários do client 
         const user = res.user
         if(user.getTypeUser() == type_user.USER_CLIENT || 
             user.getTypeUser() == type_user.ADMIN_CLIENT )
-            body('client_id').isInt().run(req)
+            await body('client_id').notEmpty().isInt().run(req)
 
         const errors = validationResult(req)
         if(!errors.isEmpty()){
             return response(res, {
                 code: 400,
-                message:"Erro ao enviar dados"
+                message:"Erro no envio de dados"
             })
         }
+
+        const { service_actions, user_id } = req.body
+
+        if(!await user_repo.update(service_actions, user_id)) 
+            return response(res, {
+                code:500,
+                message:'Erro ao tentar alterar as permissões do usuário'
+            })
+
+        // deletar registro no cache
+        await cache.deleteDataUser(user_id)
+        response(res)
     },
 
     // bloquear usuário
     // apenas usuários com permissão
-    blockUser:(req:Request, res:Response) => {
+    block: async (req:Request, res:Response) => {
+      
+        await body('user_id').isInt({min:1}).run(req)
+        const user = res.user
+
+        if(user.getTypeUser() == type_user.USER_CLIENT || 
+            user.getTypeUser() == type_user.ADMIN_CLIENT )
+            await body('client_id').isInt({min:1}).run(req)
+
+        const errors = validationResult(req)
         
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Erro no envio de dados"
+            })
+        }
+
+        const { user_id, client_id }:{user_id:number, client_id?:number } = req.body
+
+        if(!await user_repo.blockUser(true, user_id, client_id)){
+            return response(res, {
+                code: 500,
+                message:'Erro ao tentar bloquear usuário'
+            })
+        }
+
+        await cache.deleteDataUser(user_id)
+
+        response(res)
     },
 
     // reativar usuário
     // apenas usuários com permissão
-    reactivate:(req:Request, res:Response) => {
+    reactivate: async (req:Request, res:Response) => {
 
+        await body('user_id').isInt({min:1}).run(req)
+        const user = res.user
+
+        if(user.getTypeUser() == type_user.USER_CLIENT || 
+            user.getTypeUser() == type_user.ADMIN_CLIENT )
+            await body('client_id').notEmpty().isInt().run(req)
+
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Erro no envio de dados"
+            })
+        }
+
+        const { user_id, client_id }:{user_id:number, client_id?:number } = req.body
+
+        if(!await user_repo.blockUser(false, user_id, client_id)){
+            return response(res, {
+                code: 500,
+                message:'Erro ao tentar desbloquear usuário'
+            })
+        }
+
+        await cache.deleteDataUser(user_id)
+
+        response(res)
 
     }
 

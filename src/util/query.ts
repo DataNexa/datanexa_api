@@ -71,9 +71,10 @@ class MultiTransaction {
             }
         } catch (error) {
             await this.rollBack()
+            
             return {
                 error:true,
-                error_code:2,
+                error_code:(error as any).errno,
                 rows:[]
             }
             
@@ -97,7 +98,7 @@ class MultiTransaction {
             await this.rollBack()
             return {
                 error:true,
-                error_code:2,
+                error_code:(error as any).errno,
                 rows:[]
             }
             

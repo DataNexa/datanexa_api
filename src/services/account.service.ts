@@ -309,7 +309,7 @@ export default {
     // é necessário uma sessão temporária para deletar tokens
     deleteTokenDevice: async (req:Request, res:Response, next:NextFunction) => {
         
-        body('tokens')
+        await body('tokens')
             .isArray({min:1})
             .custom((array) => array.every((item: any) => typeof item === 'number'))
             .run(req)

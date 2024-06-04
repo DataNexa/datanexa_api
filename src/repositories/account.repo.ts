@@ -223,9 +223,6 @@ const account_repo = {
             binds:binds
         })
 
-        console.log(res);
-        
-
         if(res.error){
             return {
                 error:true,
@@ -249,6 +246,7 @@ const account_repo = {
         })
 
         if(statusResp.error){
+            
             if(statusResp.error_code == 1062)
                 return {
                     error:true,
@@ -397,8 +395,6 @@ const account_repo = {
             binds:[account_id]
         })
 
-        console.log(listQuery);
-        
 
         return listQuery.error ? false : (listQuery.rows as data_tokens[])
 
