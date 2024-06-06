@@ -1,6 +1,7 @@
 import { execute, query, multiTransaction } from "../util/query"
 import { type_user } from "../model/User"
 import { result_exec } from "./repositories"
+import { account_repo } from "./account.repo"
 
 interface user_basic_response { slug:string, accepted:number }
 
@@ -104,22 +105,39 @@ const user_repo = {
 
     },
 
-    checkServiceAction: async (service_actions:number[]):Promise<boolean> => {
-        
-        const q = await query("select service_actions.id from service_actions join services on services.id = service_actions.service_id where services.is_public = 1")
-        if(q.error){
-            return false
-        }
 
-        const ids:number[] = (q.rows as { id:number }[]).map( v => v.id )
+    blockUser: async (blocked:boolean, user_id:number, client_id?:number) => {
 
-        for(let service of service_actions){
-            if(!ids.includes(service)){
+        if(client_id){
+            const respquser = await query(`select id from user_client where user_id = ${user_id} and client_id = ${client_id}`)
+            if(respquser.error || (respquser.rows as any[]).length == 0){
                 return false
             }
         }
 
-        return true
+        return !(await execute(`update user set ativo = ${blocked ? 0 : 1} where id = ${user_id}`)).error
+    },
+
+    update:async (permissions:number[], user_id:number) => {
+
+        const conn = await multiTransaction()
+
+        const respexec = await conn.execute('delete from user_permission where user_id = '+user_id)
+
+        if(respexec.error){
+            return false
+        }
+
+        let insert = "insert into user_permission(user_id, service_action_id) values "
+        let values = ""
+        for(const permission of permissions){
+            values += `(${user_id},${permission}),`
+        }
+
+        let status = !(await conn.execute(insert+values.substring(0, values.length - 1))).error
+        if(status) await conn.finish()
+
+        return status
 
     },
 
@@ -130,13 +148,39 @@ const user_repo = {
         const resp = await conn.query('select id from account where email = ?', {
             binds:[email]
         })
+        
+        let account_id = 0
 
-        if(resp.error || (resp.rows as any[]).length == 0){
-            conn.finish()
-            return false
+        if(resp.error) return false
+
+        if((resp.rows as any[]).length == 0){
+            
+            let idResp = (await account_repo.registerTemp(email, conn)).insertId
+
+            if(!idResp) return false
+            
+            account_id = idResp
+
+        } else {
+            account_id = (resp.rows as {id:number}[])[0].id
         }
 
-        const account_id = (resp.rows as {id:number}[])[0].id
+        if(client_id){
+            const respCheckAcc = await conn.query(`
+                select 
+                        account.id 
+                    from account 
+                    join user on user.account_id            = account.id 
+                    join user_client on user_client.user_id = user.id 
+                where 
+                         user.tipo_usuario     = ${tipo_usuario} 
+                     and user_client.client_id = ${client_id} 
+                     and account.id            = ${account_id}           
+            `)
+            if((respCheckAcc.rows as any[]).length > 0){
+                return false
+            }
+        }
 
         // salva usuario
 
@@ -170,18 +214,21 @@ const user_repo = {
 
         // salva as permissoes publicas
         
-        let insert = "insert into user_permission (user_id, service_action_id) values "
-        let values = ""
+        if(permissions.length > 0){
 
-        for (const permission_id of permissions){
-            values += `(${user_id}, ${permission_id}),`
+            let insert = "insert into user_permission (user_id, service_action_id) values "
+            let values = ""
+
+            for (const permission_id of permissions){
+                values += `(${user_id}, ${permission_id}),`
+            }
+
+            insert += values.substring(0, values.length - 1)
+            
+            const savePermissions = await conn.execute(insert)
+            if(savePermissions.error) return false
+            
         }
-
-        insert += values.substring(0, values.length - 1)
-        console.log(insert);
-        
-        const savePermissions = await conn.execute(insert)
-        if(savePermissions.error) return false
         
         await conn.finish()
 

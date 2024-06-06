@@ -8,7 +8,7 @@ interface header {
     expire_in:number
 }
 
-export default {
+export default { 
 
     generate: function(header:header, body:Object, hash_salt:string = "", vtoken:number = 0){
         

@@ -3,6 +3,7 @@ import { type_user } from "./User";
 
 
 enum type_session {
+    NOT_SESSION,
     SESSION,
     SESSION_TEMP,
     TOKEN
@@ -61,12 +62,26 @@ const generateSessionTemp = (data:data_account_i) => {
 }
 
 const getDataSession = (session:string):data_session_i => {
-    const parts  = session.split('.')
-    const header:header_i = JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8'))
-    const user:data_user_i = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'))
-    return {
-        header, user
+    try {
+        const parts  = session.split('.')
+        const header:header_i = JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8'))
+        const user:data_user_i = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'))
+        return {
+            header, user
+        }
+    } catch (error) {
+        return { 
+            header:{ type: type_session.NOT_SESSION, expire_in: 1 }, 
+            user: {
+                user_id:0,
+                slug:'',
+                user_type:type_user.ANONIMUS,
+                token_device_id:0,
+                vtoken:0
+            } 
+        }
     }
+    
 }
 
 const verifySession = (session:string, hash_salt:string = "", vtoken:number = 0):false|response_data_i => {

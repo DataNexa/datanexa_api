@@ -10,5 +10,8 @@ export default () => {
     router.post('/openSession', user_auth.withToken, user_service.openSession)
     router.get('/getDataUser', user_auth.isNotAnonimous, user_service.getDataUser)
     router.post('/create', authorization_route('anyUserAuthorized',['user@create']), user_service.create)
+    router.post('/updatePermissionsUser', authorization_route('anyUserAuthorized', ['user@updatePermissionsUser']), user_service.updatePermissionsUser)
+    router.post('/block', authorization_route('anyUserAuthorized', ['user@block']), user_service.block)
+    router.post('/reactivate', authorization_route('anyUserAuthorized', ['user@reactivate']), user_service.reactivate)
     return router
 }
