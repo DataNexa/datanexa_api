@@ -194,4 +194,4 @@ const execute = async (query:string, oriented?:execute_oriented):Promise<respons
 
 
 
-export { query , execute, multiTransaction } 
+export { query , execute, multiTransaction, MultiTransaction } 

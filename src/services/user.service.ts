@@ -102,17 +102,19 @@ export default {
         // lembrando: a segurança de permissão pelo id do usuário já foi feita
 
         const user = res.user
+        
+        await body('tipo_usuario').isInt({min:1, max:4}).run(req)
+
         if(user.getTypeUser() == type_user.USER_CLIENT || 
             user.getTypeUser() == type_user.ADMIN_CLIENT || 
-            req.body.client_id )
+            req.body.tipo_usuario == type_user.USER_CLIENT ||
+            req.body.tipo_usuario == type_user.ADMIN_CLIENT )
             await body('client_id').isInt().run(req)
         
         await body('service_actions').isArray({min:0}).run(req)
         await body('service_actions.*').isInt().run(req)
-
         await body('email').isEmail().run(req)
-        await body('tipo_usuario').isInt({min:1, max:4}).run(req)
-
+        
         const errors = validationResult(req)
         if(!errors.isEmpty()){
             return response(res, {
@@ -122,13 +124,6 @@ export default {
         }
 
         const b:{client_id?:number, service_actions:number[], email:string, tipo_usuario:number} = req.body 
-
-        if( (b.tipo_usuario == 3 || b.tipo_usuario == 4) && !b.client_id ){
-            return response(res, {
-                code:400,
-                message:"Não foi enviado o client_id para a criação do usuário"
-            })
-        }
 
         if( 
             // se o usuário for do tipo ADMIN_CLIENT ele não poderá criar ADMIN ou GHOST user

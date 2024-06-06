@@ -1,5 +1,5 @@
 import { QueryResult } from "mysql2"
-import { query, execute, multiTransaction } from "../util/query"
+import { query, execute, multiTransaction, MultiTransaction } from "../util/query"
 import { response_data } from "./repositories"
 
 interface data_tokens {id:number, device:string}
@@ -36,6 +36,8 @@ interface account {
     email:string,
     senha:string,
     id:number,
+    confirmed:boolean,
+    temporary:boolean,
     recover?:recover,
     session_temp?:session_temp,
     token_account?:token_account
@@ -111,7 +113,9 @@ const generateSingleRow = (rows:QueryResult):account => {
             id:0,
             nome:'',
             email:'',
-            senha:''
+            senha:'',
+            confirmed:false,
+            temporary:false
         }
     }
     
@@ -120,7 +124,9 @@ const generateSingleRow = (rows:QueryResult):account => {
         id:data.id,
         nome:data.nome,
         email:data.email,
-        senha:data.senha
+        senha:data.senha,
+        confirmed:data.confirmed == 1,
+        temporary:data.temporary == 1
     }
 
     if(data.recover_id){
@@ -163,7 +169,7 @@ const account_repo = {
 
     async getAccount(by:BY, join_where_order:join_and_where_order = {}):Promise<account>{
         
-        let str_fields = "select account.id, account.nome, account.email, account.senha "
+        let str_fields = "select account.id, account.nome, account.email, account.senha, account.confirmed, account.temporary "
         let str_from = " from account "
         let str_where = "" 
         let binds:any = []
@@ -229,7 +235,9 @@ const account_repo = {
                 email:'',
                 senha:'',
                 nome:'',
-                id:0
+                id:0,
+                confirmed:false,
+                temporary:false
             }
         }
 
@@ -237,21 +245,18 @@ const account_repo = {
 
     },
 
-    async register(nome:string, email:string, passHash:string):Promise<response_data>{
+    async registerTemp(email:string, conn:MultiTransaction):Promise<response_data> {
 
-        const conn = await multiTransaction()
-        
-        const statusResp = await conn.execute('insert into account(nome, email, senha) values (?,?,?)', {
-            binds:[ nome, email, passHash ]
+        const resp = await conn.execute(`insert into account (nome, email, senha, temporary) values ('temp', ?, 'temp', 1)`, {
+            binds:[email]
         })
 
-        if(statusResp.error){
-            
-            if(statusResp.error_code == 1062)
+        if(resp.error){
+            if(resp.error_code == 1062)
                 return {
                     error:true,
                     error_code:1062,
-                    error_message:"Este e-mail já está em uso;"
+                    error_message:"Este e-mail já está em uso"
                 }
             else
                 return {
@@ -261,8 +266,72 @@ const account_repo = {
                 }
         }
 
-        const account_id = (statusResp.rows as any).insertId
+        return {
+            error:false,
+            insertId:(resp.rows as any).insertId
+        }
 
+    },
+
+    async register(nome:string, email:string, passHash:string):Promise<response_data>{
+
+        const conn = await multiTransaction()
+
+        const selQ = await conn.query('select id, temporary from account where email = ?', {
+            binds:[email]
+        })
+
+        let account_id  = 0
+        let resp_db_arr = (selQ.rows as {id:number, temporary:number}[])
+
+        if(resp_db_arr.length == 0){
+            
+            const statusResp = await conn.execute('insert into account(nome, email, senha) values (?,?,?)', {
+                binds:[ nome, email, passHash ]
+            })
+    
+            if(statusResp.error){
+                
+                if(statusResp.error_code == 1062)
+                    return {
+                        error:true,
+                        error_code:1062,
+                        error_message:"Este e-mail já está em uso"
+                    }
+                else
+                    return {
+                        error:true,
+                        error_code:1,
+                        error_message:"Erro ao tentar criar conta"
+                    }
+            }
+    
+            account_id = (statusResp.rows as any).insertId
+
+        } else if(resp_db_arr[0].temporary == 1) {
+
+            account_id = resp_db_arr[0].id
+
+            const statusResp = await conn.execute('update account set nome = ?, email = ?, senha = ?, temporary = 0 where id = ?', {
+                binds:[ nome, email, passHash, account_id ]
+            })
+
+            if(statusResp.error) {
+                return {
+                    error:true,
+                    error_code:1,
+                    error_message:"Erro ao tentar criar conta"
+                }
+            }
+
+        } else {
+            return {
+                error:true,
+                error_code:1062,
+                error_message:"Este e-mail já está em uso;"
+            }
+        }
+        
         const statusCreate = await conn.execute('insert into token_account(account_id, vtoken) values (?,?)', {
             binds:[account_id, 1]
         })

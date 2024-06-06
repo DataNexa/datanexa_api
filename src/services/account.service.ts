@@ -62,14 +62,22 @@ export default {
         const acc = await account_repo.getAccount({
             email: email
         }, {
-            join:[JOIN.TOKEN_ACCOUNT]
+            join:[JOIN.TOKEN_ACCOUNT],
+            where:" and account.temporary = ? ",
+            values:[0]
         })
 
-        if(!await JWT.comparePassword(senha, acc.senha)){
+        if(acc.error || !await JWT.comparePassword(senha, acc.senha)){
             return response(res, {
                 code:404
             })
         }
+
+        if(!acc.confirmed) 
+            return response(res, {
+                code: 401,
+                message:"Você ainda não confirmou seu e-mail"
+            }) 
 
         if(!acc.token_account){
             return response(res, {

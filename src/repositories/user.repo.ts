@@ -1,6 +1,7 @@
 import { execute, query, multiTransaction } from "../util/query"
 import { type_user } from "../model/User"
 import { result_exec } from "./repositories"
+import { account_repo } from "./account.repo"
 
 interface user_basic_response { slug:string, accepted:number }
 
@@ -147,13 +148,22 @@ const user_repo = {
         const resp = await conn.query('select id from account where email = ?', {
             binds:[email]
         })
-    
-        if(resp.error || (resp.rows as any[]).length == 0){
-            conn.finish()
-            return false
-        }
+        
+        let account_id = 0
 
-        const account_id = (resp.rows as {id:number}[])[0].id
+        if(resp.error) return false
+
+        if((resp.rows as any[]).length == 0){
+            
+            let idResp = (await account_repo.registerTemp(email, conn)).insertId
+
+            if(!idResp) return false
+            
+            account_id = idResp
+
+        } else {
+            account_id = (resp.rows as {id:number}[])[0].id
+        }
 
         if(client_id){
             const respCheckAcc = await conn.query(`
