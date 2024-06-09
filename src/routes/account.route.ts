@@ -10,6 +10,7 @@ export default () => {
     router.post('/login', account_service.login, account_log.logou)
     router.post('/sendMeCodeRecover', account_service.sendMeCodeRecover, account_log.enviadoCodigoRecuperacao)
     router.post('/recover', account_service.recover, account_log.recuperou)
+    router.post('/confirmEmail', account_service.confirmEmail)
     router.post('/edit', account_auth.onlyTempSessions, account_service.edit, account_log.editou)
     router.post('/expireSessions', account_auth.onlyTempSessions, account_service.expireAllSessions, account_log.expirouSessoes)
     router.post('/detelarTokenDevice', account_auth.onlyTempSessions, account_service.deleteTokenDevice, account_log.deletouTokens)

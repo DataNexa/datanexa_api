@@ -1,4 +1,4 @@
-import { type_user } from "../model/User"
+import { type_user } from "../libs/User"
 import { query } from "../util/query"
 
 export default {

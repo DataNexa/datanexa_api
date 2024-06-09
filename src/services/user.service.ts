@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import response from '../util/response';
 import { body, validationResult } from 'express-validator';
-import { generateSession, data_user_full_i, type_session } from '../model/session_manager';
+import { generateSession } from '../libs/session_manager';
 import { user_repo } from '../repositories/user.repo';
-import cache from '../model/cache';
-import { type_user } from '../model/User';
+import cache from '../libs/cache';
+import { type_user } from '../libs/User';
 import clientRepo from '../repositories/client.repo';
 
 export default {

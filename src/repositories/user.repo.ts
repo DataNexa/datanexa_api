@@ -1,5 +1,5 @@
 import { execute, query, multiTransaction } from "../util/query"
-import { type_user } from "../model/User"
+import { type_user } from "../libs/User"
 import { result_exec } from "./repositories"
 import { account_repo } from "./account.repo"
 

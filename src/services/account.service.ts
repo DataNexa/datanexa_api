@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express'
 import response from '../util/response';
 import { body, validationResult } from 'express-validator';
-import JWT from '../model/JWT';
-import { generateSessionTemp, generateToken } from '../model/session_manager';
+import JWT from '../libs/JWT';
+import { generateSessionTemp, generateToken } from '../libs/session_manager';
 import globals from '../config/globals';
 import { account_repo, JOIN } from '../repositories/account.repo';
 import { user_repo } from '../repositories/user.repo';
@@ -122,6 +122,7 @@ export default {
     sendMeCodeRecover: async (req:Request, res:Response, next:NextFunction) => {
         
         await body('email').isEmail().trim().run(req)
+        await body('type_code').isString().trim().run(req)
 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -131,7 +132,16 @@ export default {
             })
         }
 
-        const { email } = req.body
+        const { email, type_code } = req.body
+
+        // type_code é tipo de template que será usado ao enviar o email
+
+        if(!['confirmation', 'recover'].includes(type_code)){
+            return response(res, {
+                code:400,
+                message:'Tipo de código não existe'
+            })
+        }
     
         const acc = await account_repo.getAccount({
             email: email
@@ -175,8 +185,13 @@ export default {
         }
 
         // criar função que envia codigo por email
+        // o type_code indica o tipo de template que será usado
+        const template_code = type_code == 'recover' ?
+            `código de recuperção enviado: ${code}`:
+            `código de confirmação enviado: ${code}`
+
         if(!globals.production){
-            console.log("codigo enviado: "+code);
+            console.log(template_code);
         }
 
         response(res, {
@@ -186,6 +201,22 @@ export default {
 
     },
     
+    confirmEmail: async (req:Request, res:Response, next:NextFunction) => {
+        
+        await body('codigo').isAlphanumeric().isLength({min:6,max:6}).trim().toUpperCase().run(req)
+        await body('email').isEmail().trim().run(req)
+
+        const { codigo, email } = req.body
+
+        const resp = await account_repo.confirmAccount(email, codigo)
+
+        response(res, {
+            code: !resp.error ? 200 : 400,
+            message: resp.error_message
+        })
+
+    },
+
     // consome codigo aleatorio gerando uma sessao temporaria
     // quando a recuperação for concluída todas as sessões e tokens serão expirados
     recover: async (req:Request, res:Response, next:NextFunction) => {

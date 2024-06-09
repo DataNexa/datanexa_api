@@ -1,7 +1,7 @@
 
-import JWT from "../model/JWT";
+import JWT from "../libs/JWT";
 
-import { type_session } from "../model/session_manager";
+import { type_session } from "../libs/session_manager";
 
 const dataUser = {
     slug:"andreifcoelho.qs_midia",
