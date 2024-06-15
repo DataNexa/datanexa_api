@@ -12,7 +12,7 @@ export default {
     // gera uma sessão usando a slug do usuário e o token da conta
     openSession: async (req:Request, res:Response) => {
 
-        await body('slug').trim().matches(/^[a-zA-Z0-9_@#]+$/).run(req)
+        await body('slug').trim().matches(/^[a-zA-Z0-9\._@#]+$/).run(req)
 
         const errors = validationResult(req)
         if(!errors.isEmpty()){
@@ -264,6 +264,34 @@ export default {
 
         response(res)
 
-    }
+    },
+
+    acceptOrDeclineUser: async (req:Request, res:Response) => {
+
+        await body('slug').trim().matches(/^[a-zA-Z0-9\._@#]+$/).run(req)
+        await body('accepted').isInt({min:1, max:2}).run(req)
+
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Erro no envio de dados"
+            })
+        }
+
+        const { slug, accepted } = req.body
+
+        const resp = await user_repo.acceptOrDecline(slug, accepted)
+
+        if(resp.error){
+            return response(res, {
+                code: 500,
+                message: 'Erro no servidor'
+            })
+        }
+
+        response(res)
+
+    } 
 
 }

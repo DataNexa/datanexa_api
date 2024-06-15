@@ -542,7 +542,7 @@ const account_repo = {
         }
         
         const binds:any[] = []
-        let sqlinsert = "update account set ";
+        let sqlinsert = "update account set confirmed = 1, ";
 
         if(data.nome){
             sqlinsert += " nome = ?, "

@@ -414,7 +414,7 @@ export default {
                 session_temp:session_temp
             }
         })
-
+        
     },
 
     // lista usuários da conta
@@ -433,6 +433,25 @@ export default {
             body:responseList
         })
 
+    },
+
+    getAccountData: async(req:Request, res:Response) => {
+        const acc = await account_repo.getAccount({
+            id: res.user.getAccountId()
+        })
+        if(acc.error){
+            return response(res, {
+                code:500,
+                message:'Erro ao tentar resgatar informações da conta'
+            })
+        }
+        response(res, {
+            code:200,
+            body:{
+                email:acc.email,
+                nome:acc.nome
+            }
+        })
     }
 
 }
