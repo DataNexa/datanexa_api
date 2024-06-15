@@ -1,9 +1,10 @@
 import { execute, query, multiTransaction } from "../util/query"
-import { type_user } from "../model/User"
+import { type_user } from "../libs/User"
 import { result_exec } from "./repositories"
 import { account_repo } from "./account.repo"
 
-interface user_basic_response { slug:string, accepted:number }
+interface user_basic_response { tipo_usuario: type_user, slug:string, accepted:number, client_slug:string|null, client_nome:string|null }
+interface user_basic_response_literal { tipo_usuario: string, slug:string, accepted:number, client_slug:string|null, client_nome:string|null }
 
 interface user_token_account {
     email:string,
@@ -21,13 +22,34 @@ interface user_token_account {
 
 const user_repo = {
     
-    list:async (account_id:number):Promise<user_basic_response[]|false> => {
+    list:async (account_id:number):Promise<user_basic_response_literal[]|false> => {
 
-        const resList = await query('select slug, accepted from user where account_id = ? and ativo = 1',{
+        const resList = await query(`
+            select 
+                user.tipo_usuario, user.slug, user.accepted,
+                client.slug as client_slug, client.nome as client_nome
+            from user 
+            left join user_client on user.id = user_client.user_id 
+            left join client on client.id    = user_client.client_id
+                where user.account_id = ? and user.ativo = 1 and user.accepted < 2
+        `,{
             binds:[account_id]
         })
 
-        return resList.error ? false : (resList.rows as user_basic_response[])        
+        const list  = (resList.rows as user_basic_response[])
+        const lires:user_basic_response_literal[] = [] 
+
+        for(let item of list){
+            lires.push({
+                tipo_usuario:type_user[item.tipo_usuario],
+                slug:item.slug,
+                accepted:item.accepted,
+                client_nome:item.client_nome,
+                client_slug:item.client_slug
+            })
+        }
+
+        return resList.error ? false : lires      
 
     },
 
@@ -234,6 +256,14 @@ const user_repo = {
 
         return true
         
+    },
+
+    acceptOrDecline: async (slug_user:string, accepted:number) => {
+        return await execute(`
+            update user set accepted = ? where slug = ?
+        `, {
+            binds:[accepted, slug_user]
+        })
     }
 
 }

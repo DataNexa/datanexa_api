@@ -414,6 +414,69 @@ const account_repo = {
         }
     },
 
+    async confirmAccount(email:string, code:string):Promise<response_data>{
+
+        const conn = await multiTransaction()
+
+        const qacc = await conn.query(`
+            select 
+                account.id as account_id, recover.id as recover_id, recover.expired, recover.expire_in 
+            from recover 
+                join account on account.id = recover.account_id
+            where
+                account.email = ? and recover.codigo = ?
+            `, {
+                binds:[email, code]
+            });
+
+        if(qacc.error){
+            return {
+                error:true,
+                error_message:'erro no banco de dados - 1'
+            }
+        }
+
+        const infoacc = (qacc.rows as any[])
+        if(infoacc.length == 0){
+            return {
+                error:true,
+                error_message: 'Código não encontrado'
+            }
+        }
+
+        if(infoacc[0].expired || Date.now() > (new Date(infoacc[0].expirein)).getTime()){
+            return {
+                error:true,
+                error_message:'Código expirado'
+            }
+        }
+
+        const account_id = infoacc[0].account_id
+        const recover_id = infoacc[0].recover_id
+
+        if((await conn.execute(`update recover set expired = 1 where id = ${recover_id}`)).error){
+            return {
+                error:true,
+                error_message: 'erro no banco de dados - 2'
+            }
+        }
+
+        if((await conn.execute(`update account set confirmed = 1 where id = ${account_id}`)).error){
+            return {
+                error:true,
+                error_message:'erro no banco de dados - 3'
+            }
+        }
+
+        await conn.finish()
+
+        return {
+            error:false,
+            error_message:'Conta confirmada com sucesso'
+        }  
+
+    },
+
     async updateVToken(account_id:number):Promise<response_data>{
 
         const updateVTok = await execute('update token_account set vtoken = vtoken + 1 where account_id = ?', {
@@ -479,7 +542,7 @@ const account_repo = {
         }
         
         const binds:any[] = []
-        let sqlinsert = "update account set ";
+        let sqlinsert = "update account set confirmed = 1, ";
 
         if(data.nome){
             sqlinsert += " nome = ?, "

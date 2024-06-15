@@ -1,6 +1,6 @@
 import express, { Express } from "express";
-import { User } from "../model/User";
-import UserFactory from "../model/UserFactory";
+import { User } from "../libs/User";
+import UserFactory from "../libs/UserFactory";
 import routes from "../routes/routes";
 import cors from 'cors';
 

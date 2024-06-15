@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import Authorization from '../model/Authorization'
+import Authorization from '../libs/Authorization'
 import response from './response'
 import globals from '../config/globals'
 

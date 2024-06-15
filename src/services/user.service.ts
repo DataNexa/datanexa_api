@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import response from '../util/response';
 import { body, validationResult } from 'express-validator';
-import { generateSession, data_user_full_i, type_session } from '../model/session_manager';
+import { generateSession } from '../libs/session_manager';
 import { user_repo } from '../repositories/user.repo';
-import cache from '../model/cache';
-import { type_user } from '../model/User';
+import cache from '../libs/cache';
+import { type_user } from '../libs/User';
 import clientRepo from '../repositories/client.repo';
 
 export default {
@@ -12,7 +12,7 @@ export default {
     // gera uma sessão usando a slug do usuário e o token da conta
     openSession: async (req:Request, res:Response) => {
 
-        await body('slug').trim().matches(/^[a-zA-Z0-9_@#]+$/).run(req)
+        await body('slug').trim().matches(/^[a-zA-Z0-9\._@#]+$/).run(req)
 
         const errors = validationResult(req)
         if(!errors.isEmpty()){
@@ -264,6 +264,34 @@ export default {
 
         response(res)
 
-    }
+    },
+
+    acceptOrDeclineUser: async (req:Request, res:Response) => {
+
+        await body('slug').trim().matches(/^[a-zA-Z0-9\._@#]+$/).run(req)
+        await body('accepted').isInt({min:1, max:2}).run(req)
+
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Erro no envio de dados"
+            })
+        }
+
+        const { slug, accepted } = req.body
+
+        const resp = await user_repo.acceptOrDecline(slug, accepted)
+
+        if(resp.error){
+            return response(res, {
+                code: 500,
+                message: 'Erro no servidor'
+            })
+        }
+
+        response(res)
+
+    } 
 
 }

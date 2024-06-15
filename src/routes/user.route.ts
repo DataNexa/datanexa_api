@@ -13,5 +13,6 @@ export default () => {
     router.post('/updatePermissionsUser', authorization_route('anyUserAuthorized', ['user@updatePermissionsUser']), user_service.updatePermissionsUser)
     router.post('/block', authorization_route('anyUserAuthorized', ['user@block']), user_service.block)
     router.post('/reactivate', authorization_route('anyUserAuthorized', ['user@reactivate']), user_service.reactivate)
+    router.post('/acceptOrDeclineUser', user_auth.withToken, user_service.acceptOrDeclineUser)
     return router
 }

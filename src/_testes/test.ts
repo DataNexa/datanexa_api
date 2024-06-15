@@ -3,7 +3,7 @@ import { Request, Response } from 'express'
 
 import { multiTransaction } from '../util/query'
 import repo_tests from './repo_tests'
-import cache from '../model/cache'
+import cache from '../libs/cache'
 import { user_repo } from '../repositories/user.repo'
 
 export default async () => {
