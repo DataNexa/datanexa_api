@@ -1,6 +1,7 @@
 import { execute, query, multiTransaction } from "../util/query"
 
 interface tarefas_i {
+    id:number,
     campanha_id:number,
     tarefa:string,
     status:number,
@@ -84,12 +85,8 @@ const tarefas_repo = {
         const resp = await execute(`
         insert into tarefas(campanha_id, tarefa, status, createAt, dataLimite) 
         VALUES (?,?,?,?,?)
-             join campanhas on tarefas.campanha_id = campanhas.id 
-         join client on campanhas.client_id = client.id 
-
-         WHERE  campanhas.id = ? and  client.id = ? 
          `, {
-            binds:[campanha_id,tarefa,status,createAt,dataLimite,campanha_id,client_id]
+            binds:[campanha_id,tarefa,status,createAt,dataLimite]
         })
 
         if(resp.error && resp.error_code == 1062) return {
@@ -124,8 +121,9 @@ const tarefas_repo = {
     
     update: async (campanha_id:number,tarefa:string,status:number,createAt:string,dataLimite:string,client_id:number,id:number):Promise<boolean> => {
         
-        const resp = await execute(`update tarefas set  campanha_id = ?,  tarefa = ?,  status = ?,  createAt = ?,  dataLimite = ?     join campanhas on tarefas.campanha_id = campanhas.id 
+        const resp = await execute(`update tarefas      join campanhas on tarefas.campanha_id = campanhas.id 
          join client on campanhas.client_id = client.id 
+      set  tarefas.campanha_id = ?,  tarefas.tarefa = ?,  tarefas.status = ?,  tarefas.createAt = ?,  tarefas.dataLimite = ?
          WHERE  campanhas.id = ? and  client.id = ?  and tarefas.id = ? `, {
             binds:[campanha_id,tarefa,status,createAt,dataLimite,campanha_id,client_id,id]
         })
@@ -136,8 +134,9 @@ const tarefas_repo = {
     delete: async (campanha_id:number,client_id:number,id:number):Promise<boolean> => {
         
         const resp = await execute(`
-         delete from tarefas 
-          join campanhas on tarefas.campanha_id = campanhas.id 
+         delete tarefas 
+           from tarefas 
+               join campanhas on tarefas.campanha_id = campanhas.id 
          join client on campanhas.client_id = client.id 
  
         WHERE  campanhas.id = ? and  client.id = ?   and tarefas.id = ? `, {
