@@ -82,12 +82,31 @@ const tarefas_repo = {
     
     create: async (campanha_id:number,tarefa:string,status:number,createAt:string,dataLimite:string,client_id:number):Promise<create_response> => {
             
+        const conn   = await multiTransaction()
+
+        const testId = await conn.query('select id from campanhas where id = ? and client_id = ?',{
+            binds:[campanha_id, client_id]
+        })
+
+        if(testId.error || (testId.rows as any[]).length == 0){
+            await conn.rollBack()
+            return {
+                code:401,
+                error:true,
+                message:'Registro de campanha com este cliente não existe',
+                insertId:0
+            }
+        }
+
         const resp = await execute(`
         insert into tarefas(campanha_id, tarefa, status, createAt, dataLimite) 
         VALUES (?,?,?,?,?)
          `, {
             binds:[campanha_id,tarefa,status,createAt,dataLimite]
         })
+
+        if(resp.error)
+            await conn.rollBack()
 
         if(resp.error && resp.error_code == 1062) return {
             code:500,
@@ -109,6 +128,8 @@ const tarefas_repo = {
             message:'Erro no servidor',
             insertId:0
         }
+
+        await conn.finish()
 
         return {
             code:200,

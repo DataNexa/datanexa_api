@@ -79,12 +79,31 @@ const hashtags_repo = {
     
     create: async (monitoramento_id:number,tag:string,client_id:number):Promise<create_response> => {
             
+        const conn = await multiTransaction()
+
+        const test = await conn.query('select id from monitoramento where id = ? and client_id = ?',{
+            binds:[monitoramento_id, client_id]
+        }) 
+
+        if(test.error || (test.rows as any[]).length == 0){
+            await conn.rollBack()
+            return {
+                code:401,
+                error:true,
+                message:'Registro de monitoramento com este cliente não existe',
+                insertId:0
+            }
+        }
+
         const resp = await execute(`
         insert into hashtags(monitoramento_id, tag) 
         VALUES (?,?)
          `, {
             binds:[monitoramento_id,tag]
         })
+
+        if(resp.error)
+            await conn.rollBack()
 
         if(resp.error && resp.error_code == 1062) return {
             code:500,
@@ -106,6 +125,8 @@ const hashtags_repo = {
             message:'Erro no servidor',
             insertId:0
         }
+
+        await conn.finish()
 
         return {
             code:200,
