@@ -1,3 +1,5 @@
+server/*
+!server/readme.md
 # Logs
 logs
 *.log

@@ -173,7 +173,7 @@ const campanhas_repo = {
     update: async (client_id:number,nome:string,descricao:string,ativo:number,id:number):Promise<boolean> => {
         
         const resp = await execute(`update campanhas      join client on campanhas.client_id = client.id 
-      set  campanhas.client_id = ?,  campanhas.nome = ?,  campanhas.descricao = ?,  campanhas.ativo = ?
+        set  campanhas.client_id = ?,  campanhas.nome = ?,  campanhas.descricao = ?,  campanhas.ativo = ?
          WHERE  client.id = ?  and campanhas.id = ? `, {
             binds:[client_id,nome,descricao,ativo,client_id,id]
         })
