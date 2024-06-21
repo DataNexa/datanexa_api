@@ -1,6 +1,9 @@
 import { QueryResult } from "mysql2"
 import { query, execute, multiTransaction, MultiTransaction } from "../util/query"
 import { response_data } from "./repositories"
+import JWT from '../libs/JWT';
+
+import { generateToken } from "../libs/session_manager";
 
 interface data_tokens {id:number, device:string}
 
@@ -219,12 +222,16 @@ const account_repo = {
             query_str += join_where_order.order
         }
 
+        console.log(query_str);
+        
         if(join_where_order.values){
             for(let v of join_where_order.values){
                 binds.push(v)
             }
         }
 
+        console.log(binds);
+        
         const res = await query(query_str, {
             binds:binds
         })
@@ -351,17 +358,27 @@ const account_repo = {
         }
     },
 
-    async registerToken(token_account_id:number, hash_salt:string, refresh_token:string, device:string):Promise<response_data>{
-        const respIns = await execute(
-            `insert into 
+    async registerToken(token_account_id:number, hash_salt:string, refresh_token:string, device:string, conn?:MultiTransaction):Promise<{error:boolean, insertId:number}>{
+        
+        const respIns = !conn 
+            ? await execute(
+                `insert into 
+                token_device_account (token_account_id, hash_salt, refresh_token, device)
+                values(?,?,?,?)`,{
+                    binds:[token_account_id, hash_salt, refresh_token, device]
+                }) 
+            : await conn.execute(
+                    `insert into 
                 token_device_account (token_account_id, hash_salt, refresh_token, device)
                 values(?,?,?,?)`,{
                     binds:[token_account_id, hash_salt, refresh_token, device]
                 })
        
         return {
-            error:respIns.error
+            error:respIns.error,
+            insertId: !respIns.error ? (respIns.rows as any).insertId : 0
         }
+        
     },
 
     async registerSessionTemp(account_id:number, session_value:string):Promise<response_data>{
@@ -474,6 +491,94 @@ const account_repo = {
             error:false,
             error_message:'Conta confirmada com sucesso'
         }  
+
+    },
+
+    async login(email:string, senha:string, user_agent:string):Promise<{token:string, error:boolean, code:number, message:string}>{
+
+        const conn = await multiTransaction()
+        const selAccout = await conn.query(`
+            select 
+                account.id, account.nome, account.email, account.senha, 
+                account.confirmed, account.temporary, 
+                token_account.id as token_account_id, 
+                token_account.vtoken as vtoken 
+            from account  
+                left join token_account on token_account.account_id = account.id 
+            where account.email = ?  and account.temporary = 0
+        `,{
+            binds:[email]
+        })
+
+        if(selAccout.error){
+            await conn.rollBack()
+            return {
+                token:'',
+                error:true,
+                code:500,
+                message:'Erro no servidor - 1'
+            }
+        }
+
+        const acc = (selAccout.rows as any[])[0]
+
+        if(acc.length == 0 || !await JWT.comparePassword(senha, acc.senha)){
+            await conn.rollBack()
+            return {
+                token:'',
+                error:true,
+                code:404,
+                message:'E-mail e/ou senha incorretos'
+            }
+        }
+
+        if(!acc.confirmed){
+            await conn.rollBack()
+            return {
+                token:'',
+                error:true,
+                code:404,
+                message:'Você ainda não confirmou seu e-mail'
+            }
+        }
+
+        const refresh_token = JWT.newToken(`${acc.id}refresh_token${Date.now()}`, 'sha512')
+        const hash_salt     = JWT.newToken(`${acc.id}hash_salt${Date.now()}`)
+
+        const response_register = await account_repo.registerToken(
+            acc.token_account_id,
+            hash_salt,
+            refresh_token,
+            user_agent,
+            conn
+        )
+
+        if(response_register.error){
+            await conn.rollBack()
+            return {
+                token:'',
+                error:true,
+                code:404,
+                message:'Erro ao tentar salvar token no banco de dados, por favor tente novamente.'
+            }
+        }
+
+        const token_device_account_id = response_register.insertId
+
+        const token = generateToken({
+            account_id:acc.id,
+            token_device_id:token_device_account_id,
+            vtoken:acc.vtoken
+        })
+
+        await conn.finish()
+
+        return {
+            token:token,
+            error:false,
+            code:200,
+            message:''
+        }
 
     },
 
