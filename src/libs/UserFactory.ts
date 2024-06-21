@@ -85,6 +85,8 @@ const generateUserToken = async (dataToken:data_token_i, user:User):Promise<bool
     
     const token_device_id = dataToken.token_device_id
     const account_id = dataToken.account_id
+
+    console.log(dataToken);
     
     const userTokenReq = await account_repo.getAccount({
         id:account_id

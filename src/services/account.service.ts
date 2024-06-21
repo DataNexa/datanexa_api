@@ -59,62 +59,16 @@ export default {
 
         const { email, senha } = req.body
 
-        const acc = await account_repo.getAccount({
-            email: email
-        }, {
-            join:[JOIN.TOKEN_ACCOUNT],
-            where:" and account.temporary = ? ",
-            values:[0]
-        })
+        const resp = await account_repo.login(email, senha, req.headers['user-agent'] ? req.headers['user-agent'] : '')
 
-        if(acc.error || !await JWT.comparePassword(senha, acc.senha)){
-            return response(res, {
-                code:404
-            })
-        }
-
-        if(!acc.confirmed) 
-            return response(res, {
-                code: 401,
-                message:"Você ainda não confirmou seu e-mail"
-            }) 
-
-        if(!acc.token_account){
-            return response(res, {
-                code: 500,
-                message: 'ERRO NO REGISTRO'
-            })
-        }
-
-        const device        = req.headers['user-agent'] ? req.headers['user-agent'] : ''
-        const refresh_token = JWT.newToken(`${acc.id}refresh_token${Date.now()}`, 'sha512')
-        const hash_salt     = JWT.newToken(`${acc.id}hash_salt${Date.now()}`)
-
-        const response_register = await account_repo.registerToken(
-            acc.token_account.token_account_id,
-            hash_salt,
-            refresh_token,
-            device
-        )
-
-        if(response_register.error)
-            return response(res, {
-                code:500,
-                message:'ERRO AO TENTAR SALVAR O TOKEN NO BANCO DE DADOS'
-            })
-
-        const token = generateToken({
-            account_id:acc.id,
-            token_device_id:acc.token_account.token_account_id,
-            vtoken:acc.token_account.vtoken
-        })
-        
         response(res, {
-            code:200,
+            code:resp.code,
+            message:resp.message,
             body:{
-                token:token
+                token:resp.token
             }
         }, next)
+            
     
     },
 
@@ -422,6 +376,7 @@ export default {
     listUsersAccount: async (req:Request, res:Response) => {
 
         const responseList = await user_repo.list(res.user.getAccountId())
+
         if(!responseList){
             return response(res, {
                 code:500,
