@@ -59,18 +59,15 @@ function generateDonutPath(size: number, id: string, percentage: number): string
     // Calcula o ângulo total em radianos correspondente à porcentagem
     const totalAngle = (percentage / 100) * 2 * Math.PI;
 
-    // Calcula os pontos de fim do arco externo
     const endOuterX = centerX + outerRadius * Math.cos(totalAngle - Math.PI / 2);
     const endOuterY = centerY + outerRadius * Math.sin(totalAngle - Math.PI / 2);
 
-    // Calcula os pontos de fim do arco interno
     const endInnerX = centerX + innerRadius * Math.cos(totalAngle - Math.PI / 2);
     const endInnerY = centerY + innerRadius * Math.sin(totalAngle - Math.PI / 2);
 
-    // Define se o arco deve ser maior que 180 graus
+
     const largeArcFlag = percentage > 50 ? 1 : 0;
 
-    // Gera o caminho do SVG
     const svgPath = `
 
         <path id="${id}" d="
