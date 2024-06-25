@@ -86,7 +86,7 @@ const generateUserToken = async (dataToken:data_token_i, user:User):Promise<bool
     const token_device_id = dataToken.token_device_id
     const account_id = dataToken.account_id
 
-    console.log(dataToken);
+    // console.log(dataToken);
     
     const userTokenReq = await account_repo.getAccount({
         id:account_id
@@ -129,6 +129,9 @@ export default async (req:Request, res:Response, next:NextFunction) => {
                 return response(res,{
                     code: 401
                 }, next)
+            }
+            if(user.getClientId()){
+                req.body.client_id = user.getClientId()
             }
             return next()
         }

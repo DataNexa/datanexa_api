@@ -17,6 +17,7 @@ export default () => {
     router.post('/create', sleeper(2000),authorization_route('anyUserAuthorized', ['pesquisas@create']), pesquisas_service.create)
     router.post('/update', authorization_route('anyUserAuthorized', ['pesquisas@update']), pesquisas_service.update)
     router.post('/delete', authorization_route('anyUserAuthorized', ['pesquisas@delete']), pesquisas_service.delete)
+    router.post('/relatorio', authorization_route('anyUserAuthorized', ['pesquisas@relatorio']), pesquisas_service.relatorio)
     
     router.use('/opcoes_pergunta_perfil_pesquisa', opcoes_pergunta_perfil_pesquisaRoute())
     router.use('/opcoes_pergunta_pesquisa', opcoes_pergunta_pesquisaRoute())

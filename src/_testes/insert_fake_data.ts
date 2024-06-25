@@ -496,7 +496,7 @@ const insertPesquisas = async () => {
 
             if(insertPerguntas.error){
                 await conn.rollBack()
-                console.log(insertPerguntas.error_code);
+                // console.log(insertPerguntas.error_code);
                 return 
             }
     

@@ -2,16 +2,14 @@ import { Request, Response, NextFunction } from 'express'
 import response from '../../util/response'
 import { body, validationResult } from 'express-validator'
 
-import { pesquisas_repo, pesquisas_i } from '../../repositories/pesquisas/pesquisas.repo'
+import { pesquisas_repo } from '../../repositories/pesquisas/pesquisas.repo'
 
 export default {
 
-    
 
     list: async (req:Request, res:Response) => {
 
         await body('client_id').isNumeric().run(req)
-
 
         if(!validationResult(req).isEmpty()){
             return response(res, {
@@ -155,5 +153,36 @@ export default {
         response(res)
 
     },
+
+    relatorio: async (req:Request, res:Response) => {
+
+        await body('client_id').isNumeric().run(req)
+        await body('id').isNumeric().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code:400,
+                message:'Bad Request'
+            })
+        }   
+
+        const { client_id, id} = req.body 
+
+        const resp_repo = await pesquisas_repo.estatisticas(client_id, id)
+
+        if(!resp_repo){
+            return response(res, {
+                code:500,
+                message:"Erro no servidor ao tentar gerar as estatísticas"
+            })
+        }
+
+        response(res, {
+            code:200,
+            body:resp_repo
+        })
+
+
+    }
 
 }

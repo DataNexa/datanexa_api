@@ -26,6 +26,7 @@ interface col {
 }
 
 interface Content {
+    group?:Content[],
     cols?:col,
     text?:Text,
     textField?:Text[],
@@ -144,6 +145,30 @@ class Document {
         }
     }
 
+    async drawGroup(group:Content[], height:number, margin?:Margin){
+        
+        for(const item of group){
+            
+            if(item.text){
+                this.dinamic_height = item.height
+                await this.drawText(item.text, item.height)
+            }
+            if(item.textField){
+                this.dinamic_height = item.height
+                await this.drawTextField(item.textField, item.height)
+            }
+            if(item.svg){
+                this.dinamic_height = item.height
+                await this.drawSVG(item.svg, item.height, margin)
+            }
+            if(item.cols && item.cols.type == typeCols.HORIZONTAL){
+                this.dinamic_height = item.height
+                await this.defineCols(item.cols, item.height)
+            }
+        }
+
+    }
+
     async drawText(text:Text, height:number){
         
         if(!this.pdfDoc){
@@ -202,6 +227,9 @@ class Document {
         if(content.textField){
             await this.drawTextField(content.textField, content.height)
         }
+        if(content.group){
+            await this.drawGroup(content.group, content.height, content.margin)
+        }
     }
 
 
@@ -248,7 +276,7 @@ class Document {
     async defineRows(col:col, redefine:boolean = true){
 
         for(const c of col.content){
-            
+
             this.dinamic_height = c.height
 
             this.checkNewPage()

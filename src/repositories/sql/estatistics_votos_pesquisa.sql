@@ -1,5 +1,5 @@
 select 
-    perguntas_pesquisa.id       as pesquisa_id,
+    perguntas_pesquisa.id       as pergunta_pesquisa_id,
     opcoes_pergunta_pesquisa.id as opcao_id, 
     perguntas_pesquisa.pergunta, 
     opcoes_pergunta_pesquisa.valor, 
@@ -18,7 +18,7 @@ where
 
 
 select 
-    perguntas_perfil_pesquisa.id       as pesquisa_id,
+    perguntas_perfil_pesquisa.id       as pergunta_pesquisa_id,
     opcoes_pergunta_perfil_pesquisa.id as opcao_id, 
     perguntas_perfil_pesquisa.pergunta, 
     opcoes_pergunta_perfil_pesquisa.valor, 
