@@ -7,6 +7,6 @@ export default async () => {
         order:" order by recover.id desc limit 1"
     })
 
-    console.log(acc);
+    // console.log(acc);
     
 }

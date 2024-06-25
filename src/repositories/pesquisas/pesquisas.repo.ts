@@ -22,17 +22,48 @@ interface unique_response {
     row?:pesquisas_i
 }
 
+interface stats {
+    perfil:{
+        [key:number]:{
+            pergunta:string,
+            options:{
+                valor:string,
+                votos:number
+            }[]
+        }
+    },
+    questionario:{
+        [key:number]:{
+            pergunta:string,
+            options:{
+                valor:string,
+                votos:number
+            }[]
+        }
+    },
+}
+
 const pesquisas_repo = {
         
     
     list: async (client_id:number, injectString:string=''):Promise<pesquisas_i[]|false> => {
             
         const resp = await query(` 
-        SELECT  pesquisas.id,  pesquisas.client_id,  pesquisas.titulo,  pesquisas.descricao,  pesquisas.ativo
+        SELECT  
+            pesquisas.id,  
+            pesquisas.client_id,  
+            pesquisas.titulo,  
+            pesquisas.descricao,  
+            pesquisas.ativo,
+            pesquisas.createAt,
+            pesquisas.duration,
+            (select count(*) from perguntas_pesquisa where pesquisa_id = pesquisas.id) as quantPerguntas,
+            (select count(*) from respostas_pesquisa where pesquisa_id = pesquisas.id) as quantParticipantes
         from pesquisas 
              join client on pesquisas.client_id = client.id 
  
-         WHERE  client.id = ? 
+         WHERE  client.id = ?
+         and pesquisas.ativo < 3
         ${injectString}`, {
             binds:[client_id]
         })
@@ -45,12 +76,21 @@ const pesquisas_repo = {
     unique: async (client_id:number,id:number):Promise<unique_response> =>  {
         
         const resp = await query(` 
-        SELECT  pesquisas.id,  pesquisas.client_id,  pesquisas.titulo,  pesquisas.descricao,  pesquisas.ativo
+        SELECT  
+            pesquisas.id,  
+            pesquisas.client_id,  
+            pesquisas.titulo,  
+            pesquisas.descricao,  
+            pesquisas.ativo,
+            pesquisas.createAt,
+            pesquisas.duration,
+            (select count(*) from perguntas_pesquisa where pesquisa_id = pesquisas.id) as quantPerguntas,
+            (select count(*) from respostas_pesquisa where pesquisa_id = pesquisas.id) as quantParticipantes
         from pesquisas 
              join client on pesquisas.client_id = client.id 
  
          WHERE  client.id = ? 
-            and pesquisas.id = ? `, {
+            and pesquisas.id = ? and pesquisas.ativo < 3 `, {
             binds:[client_id,id]
         })
 
@@ -139,7 +179,112 @@ const pesquisas_repo = {
         })
 
         return !resp.error
+    },
+
+    estatisticas: async (client_id:number,  id:number):Promise<stats|false> => {
+
+        const stats:stats = {
+            perfil:{},
+            questionario:{}
+        }
+
+        const conn = await multiTransaction()
+
+        const resp_perguntas_q = await conn.query(`
+            select 
+                perguntas_pesquisa.id       as pergunta_pesquisa_id,
+                opcoes_pergunta_pesquisa.id as opcao_id, 
+                perguntas_pesquisa.pergunta, 
+                opcoes_pergunta_pesquisa.valor, 
+                (   
+                    select 
+                        count(*) 
+                    from  respostas_pergunta 
+                    where opcao_pergunta_id = opcao_id
+                ) as total_votos
+            from 
+                opcoes_pergunta_pesquisa
+                join perguntas_pesquisa on perguntas_pesquisa.id = opcoes_pergunta_pesquisa.pergunta_pesquisa_id 
+                join pesquisas          on pesquisas.id          = perguntas_pesquisa.pesquisa_id
+            where 
+                pesquisas.id = ? and client_id = ?;
+        `, {
+            binds:[id, client_id]
+        });
+        
+        
+        if(resp_perguntas_q.error){
+            await conn.rollBack()
+            return false
+        }
+        
+        const perguntas = (resp_perguntas_q.rows as any)
+
+        for(const pergunta of perguntas){
+            if(!stats.questionario[pergunta.pergunta_pesquisa_id]){
+                stats.questionario[pergunta.pergunta_pesquisa_id] = {
+                    pergunta:pergunta.pergunta,
+                    options:[]
+                }
+            }
+            stats.questionario[pergunta.pergunta_pesquisa_id].options.push({
+                valor:pergunta.valor,
+                votos:pergunta.total_votos
+            })
+        }
+
+        const resp_perfil_q = await conn.query(`
+            select 
+                perguntas_perfil_pesquisa.id       as pergunta_pesquisa_id,
+                opcoes_pergunta_perfil_pesquisa.id as opcao_id, 
+                perguntas_perfil_pesquisa.pergunta, 
+                opcoes_pergunta_perfil_pesquisa.valor, 
+                (   
+                    select 
+                        count(*) 
+                    from  respostas_perfil_pesquisa 
+                    where opcao_pergunta_perfil_id = opcao_id
+                ) as total_votos
+            from 
+                opcoes_pergunta_perfil_pesquisa
+                join perguntas_perfil_pesquisa on perguntas_perfil_pesquisa.id = opcoes_pergunta_perfil_pesquisa.pergunta_perfil_pesquisa_id 
+                join pesquisas                 on pesquisas.id                 = perguntas_perfil_pesquisa.pesquisa_id
+            where 
+                pesquisas.id = ? and client_id = ?;
+        `, {
+            binds:[id, client_id]
+        });
+        
+        
+        if(resp_perfil_q.error){
+            await conn.rollBack()
+            return false
+        }
+        
+        const perfis = (resp_perfil_q.rows as any)
+
+        for(const perfil of perfis){
+            if(!stats.perfil[perfil.pergunta_pesquisa_id]){
+                stats.perfil[perfil.pergunta_pesquisa_id] = {
+                    pergunta:perfil.pergunta,
+                    options:[]
+                }
+            }
+            stats.perfil[perfil.pergunta_pesquisa_id].options.push({
+                valor:perfil.valor,
+                votos:perfil.total_votos
+            })
+        }
+
+        await conn.finish()
+
+        return stats
+
     }
+
 }
+
+
+
 
 export { pesquisas_repo, pesquisas_i }

@@ -222,15 +222,11 @@ const account_repo = {
             query_str += join_where_order.order
         }
 
-        console.log(query_str);
-        
         if(join_where_order.values){
             for(let v of join_where_order.values){
                 binds.push(v)
             }
         }
-
-        console.log(binds);
         
         const res = await query(query_str, {
             binds:binds
