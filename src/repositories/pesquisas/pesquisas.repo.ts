@@ -22,6 +22,12 @@ interface unique_response {
     row?:pesquisas_i
 }
 
+interface resposta_response {
+    error:boolean,
+    message:string,
+    code:number
+}
+
 interface stats {
     perfil:{
         [key:number]:{
@@ -280,11 +286,87 @@ const pesquisas_repo = {
 
         return stats
 
+    },
+
+    responder: async (client_id:number, id:number, options_perfil:number[], options_questionario:number[]):Promise<resposta_response> => {
+
+        const conn = await multiTransaction()
+
+        const checkPesquisa = await conn.query(`select id from pesquisas where client_id = ? and id = ?`, {
+            binds:[client_id, id]
+        })
+
+        if(checkPesquisa.error || (checkPesquisa.rows as any[]).length == 0){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Essa pesquisa não existe ou não é do cliente'
+            }
+        }
+
+   
+        const options_perfil_final   = options_perfil.filter((value, index, self) => self.indexOf(value) === index);
+
+        const options_quest_final   = options_questionario.filter((value, index, self) => self.indexOf(value) === index);
+
+        const insertResposta = await conn.execute(`
+            insert into respostas_pesquisa (pesquisa_id) values (${id})
+        `);
+
+        if(insertResposta.error){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Não foi possível criar uma resposta'
+            }
+        }
+
+        const resposta_id = (insertResposta.rows as any).insertId
+
+        let insertPerfil = 'insert into respostas_perfil_pesquisa (resposta_id, opcao_pergunta_perfil_id) values '
+        for(const option of options_perfil_final){
+            insertPerfil += `(${resposta_id}, ${option}),`
+        }
+
+        const insertPerfilValues = await conn.execute(insertPerfil.substring(0, insertPerfil.length - 1))
+        if(insertPerfilValues.error){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Não foi possível criar uma resposta'
+            }
+        }
+
+
+        let insertQuestionario = 'insert into respostas_pergunta (resposta_id, opcao_pergunta_id) values '
+        for(const option of options_quest_final){
+            insertQuestionario += `(${resposta_id}, ${option}),`
+        }
+        
+        const insertQuestValues = await conn.execute(insertQuestionario.substring(0,insertQuestionario.length - 1))
+        if(insertQuestValues.error){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Não foi possível criar uma resposta'
+            }
+        }
+
+        await conn.finish()
+
+        return {
+            error:false,
+            code:200,
+            message:''
+        }
+        
     }
 
 }
-
-
 
 
 export { pesquisas_repo, pesquisas_i }

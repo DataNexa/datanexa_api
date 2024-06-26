@@ -183,6 +183,36 @@ export default {
         })
 
 
+    },
+
+    responder: async (req:Request, res:Response) => {
+
+        await body('client_id').isNumeric().run(req)
+        await body('id').isNumeric().run(req)
+        await body('options_perfil').isArray().run(req)
+        await body('options_questionario').isArray().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code:400,
+                message:'Bad Request'
+            })
+        }   
+
+        const { client_id, id, options_perfil, options_questionario } = req.body 
+
+        const resposta = await pesquisas_repo.responder(client_id,id,options_perfil, options_questionario)
+
+        if(resposta.error){
+            return response(res, {
+                code: resposta.code,
+                message:resposta.message
+            })
+        }
+
+        response(res)
+
     }
+
 
 }

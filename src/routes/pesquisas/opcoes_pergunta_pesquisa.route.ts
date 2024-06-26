@@ -8,7 +8,6 @@ const router = Router()
 export default () => {
 
     router.post('/list', authorization_route('anyUserAuthorized', ['pesquisas@list']), opcoes_pergunta_pesquisa_service.list)
-    router.post('/unique', authorization_route('anyUserAuthorized', ['pesquisas@list']), opcoes_pergunta_pesquisa_service.unique)
     router.post('/create', authorization_route('anyUserAuthorized', ['pesquisas@create']), opcoes_pergunta_pesquisa_service.create)
     router.post('/update', authorization_route('anyUserAuthorized', ['pesquisas@update']), opcoes_pergunta_pesquisa_service.update)
     router.post('/delete', authorization_route('anyUserAuthorized', ['pesquisas@delete']), opcoes_pergunta_pesquisa_service.delete)
