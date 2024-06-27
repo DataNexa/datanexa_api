@@ -44,7 +44,6 @@ export default {
 
         await body('pergunta_perfil_pesquisa_id').isNumeric().run(req)
         await body('valor').isString().trim().run(req)
-        await body('pesquisa_id').isNumeric().run(req)
         await body('client_id').isNumeric().run(req)
 
 
@@ -55,8 +54,8 @@ export default {
             })
         }
 
-        const { pergunta_perfil_pesquisa_id,valor,pesquisa_id,client_id } = req.body
-        const resp_repo = await opcoes_pergunta_perfil_pesquisa_repo.create(pergunta_perfil_pesquisa_id,valor,pesquisa_id,client_id)
+        const { pergunta_perfil_pesquisa_id,valor,client_id } = req.body
+        const resp_repo = await opcoes_pergunta_perfil_pesquisa_repo.create(pergunta_perfil_pesquisa_id,valor,client_id)
 
         if(resp_repo.error){
             return response(res, {
@@ -105,7 +104,6 @@ export default {
     delete: async (req:Request, res:Response) => {
 
         await body('pergunta_perfil_pesquisa_id').isNumeric().run(req)
-        await body('pesquisa_id').isNumeric().run(req)
         await body('client_id').isNumeric().run(req)
         await body('id').isNumeric().run(req)
 
@@ -117,8 +115,8 @@ export default {
             })
         }
         
-        const { pergunta_perfil_pesquisa_id,pesquisa_id,client_id,id } = req.body
-        const resp_repo = await opcoes_pergunta_perfil_pesquisa_repo.delete(pergunta_perfil_pesquisa_id,pesquisa_id,client_id,id)
+        const { pergunta_perfil_pesquisa_id,client_id,id } = req.body
+        const resp_repo = await opcoes_pergunta_perfil_pesquisa_repo.delete(pergunta_perfil_pesquisa_id,client_id,id)
 
         if(!resp_repo){
             return response(res, {

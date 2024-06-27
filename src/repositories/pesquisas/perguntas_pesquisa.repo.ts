@@ -43,7 +43,7 @@ const perguntas_pesquisa_repo = {
                 order by perguntas_pesquisa.id
         ${injectString}`, {
             binds:[pesquisa_id,client_id]
-        })
+        })  
 
         if(resp.error) return false 
 

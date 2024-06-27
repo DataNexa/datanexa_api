@@ -40,7 +40,6 @@ export default {
         await body('client_id').isNumeric().run(req)
         await body('id').isNumeric().run(req)
 
-
         if(!validationResult(req).isEmpty()){
             return response(res, {
                 code: 400,
@@ -71,7 +70,7 @@ export default {
         await body('titulo').isString().trim().run(req)
         await body('descricao').isString().trim().run(req)
         await body('ativo').isNumeric().run(req)
-
+        await body('termino').isString().trim().run(req)
 
         if(!validationResult(req).isEmpty()){
             return response(res, {
@@ -80,8 +79,8 @@ export default {
             })
         }
 
-        const { client_id,titulo,descricao,ativo } = req.body
-        const resp_repo = await pesquisas_repo.create(client_id,titulo,descricao,ativo)
+        const { client_id, titulo, descricao, ativo, termino } = req.body
+        const resp_repo = await pesquisas_repo.create(client_id,titulo,descricao,ativo,termino)
 
         if(resp_repo.error){
             return response(res, {
@@ -102,6 +101,7 @@ export default {
         await body('client_id').isNumeric().run(req)
         await body('titulo').isString().trim().run(req)
         await body('descricao').isString().trim().run(req)
+        await body('termino').isString().trim().run(req)
         await body('ativo').isNumeric().run(req)
         await body('id').isNumeric().run(req)
 

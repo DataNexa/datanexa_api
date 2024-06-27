@@ -31,7 +31,7 @@ interface resposta_response {
 interface stats {
     perfil:{
         [key:number]:{
-            pergunta:string,
+            pergunta:string,    
             options:{
                 valor:string,
                 votos:number
@@ -55,21 +55,22 @@ const pesquisas_repo = {
     list: async (client_id:number, injectString:string=''):Promise<pesquisas_i[]|false> => {
             
         const resp = await query(` 
-        SELECT  
-            pesquisas.id,  
-            pesquisas.client_id,  
-            pesquisas.titulo,  
-            pesquisas.descricao,  
-            pesquisas.ativo,
-            pesquisas.createAt,
-            pesquisas.duration,
-            (select count(*) from perguntas_pesquisa where pesquisa_id = pesquisas.id) as quantPerguntas,
-            (select count(*) from respostas_pesquisa where pesquisa_id = pesquisas.id) as quantParticipantes
-        from pesquisas 
-             join client on pesquisas.client_id = client.id 
- 
-         WHERE  client.id = ?
-         and pesquisas.ativo < 3
+            SELECT  
+                pesquisas.id,  
+                pesquisas.client_id,  
+                pesquisas.titulo,  
+                pesquisas.descricao,  
+                pesquisas.ativo,
+                pesquisas.createAt,
+                pesquisas.duration,
+                (select count(*) from perguntas_pesquisa where pesquisa_id = pesquisas.id) as quantPerguntas,
+                (select count(*) from respostas_pesquisa where pesquisa_id = pesquisas.id) as quantParticipantes
+            from pesquisas 
+                join client on pesquisas.client_id = client.id 
+    
+            WHERE client.id = ?
+                    and pesquisas.ativo < 3
+            ORDER BY pesquisas.id DESC
         ${injectString}`, {
             binds:[client_id]
         })
@@ -123,13 +124,26 @@ const pesquisas_repo = {
 
     },    
     
-    create: async (client_id:number,titulo:string,descricao:string,ativo:number):Promise<create_response> => {
-            
+    create: async (client_id:number,titulo:string,descricao:string,ativo:number, termino:string = ''):Promise<create_response> => {
+        
+        
+        const hoje = new Date()
+
+        let strFields = '(client_id, titulo, descricao, ativo, createAt'+(termino == ''?')':', duration)')
+        let valFields = '(?,?,?,?,?'+(termino == ''?')':',?)')
+
+        let binds = [client_id,titulo,descricao,ativo, hoje]
+
+        if(termino != ""){
+            const limt = new Date(termino)
+            binds.push(limt)
+        }
+
         const resp = await execute(`
-        insert into pesquisas(client_id, titulo, descricao, ativo) 
-        VALUES (?,?,?,?)
+            insert into pesquisas ${strFields}
+            VALUES ${valFields}
          `, {
-            binds:[client_id,titulo,descricao,ativo]
+            binds:binds
         })
 
         if(resp.error && resp.error_code == 1062) return {

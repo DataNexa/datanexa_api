@@ -44,8 +44,10 @@ const opcoes_pergunta_perfil_pesquisa_repo = {
     
     
     
-    create: async (pergunta_perfil_pesquisa_id:number,valor:string,pesquisa_id:number,client_id:number):Promise<create_response> => {
-            
+    create: async (pergunta_perfil_pesquisa_id:number,valor:string, client_id:number):Promise<create_response> => {
+        
+        // TODO: verificar se o cliente_id está vinculado a pergunta_perfil_pesquisa_id
+
         const resp = await execute(`
         insert into opcoes_pergunta_perfil_pesquisa(pergunta_perfil_pesquisa_id, valor) 
         VALUES (?,?)
@@ -97,7 +99,7 @@ const opcoes_pergunta_perfil_pesquisa_repo = {
         return !resp.error
     },    
     
-    delete: async (pergunta_perfil_pesquisa_id:number,pesquisa_id:number,client_id:number,id:number):Promise<boolean> => {
+    delete: async (pergunta_perfil_pesquisa_id:number, client_id:number,id:number):Promise<boolean> => {
         
         const resp = await execute(`
          delete opcoes_pergunta_perfil_pesquisa 
@@ -106,8 +108,8 @@ const opcoes_pergunta_perfil_pesquisa_repo = {
          join pesquisas on perguntas_perfil_pesquisa.pesquisa_id = pesquisas.id 
          join client on pesquisas.client_id = client.id 
  
-        WHERE  perguntas_perfil_pesquisa.id = ? and  pesquisas.id = ? and  client.id = ?   and opcoes_pergunta_perfil_pesquisa.id = ? `, {
-            binds:[pergunta_perfil_pesquisa_id,pesquisa_id,client_id,id]
+        WHERE  perguntas_perfil_pesquisa.id = ? and  client.id = ?   and opcoes_pergunta_perfil_pesquisa.id = ? `, {
+            binds:[pergunta_perfil_pesquisa_id,client_id,id]
         })
 
         return !resp.error
