@@ -24,7 +24,9 @@ const user_repo = {
     
     list:async (account_id:number):Promise<user_basic_response_literal[]|false> => {
 
-        const resList = await query(`
+        const conn = await multiTransaction()
+
+        const resList = await conn.query(`
             select 
                 user.tipo_usuario, user.slug, user.accepted,
                 client.slug as client_slug, client.nome as client_nome
@@ -38,6 +40,8 @@ const user_repo = {
 
         const list  = (resList.rows as user_basic_response[])
         const lires:user_basic_response_literal[] = [] 
+
+        await conn.finish()
 
         for(let item of list){
             lires.push({
@@ -55,7 +59,9 @@ const user_repo = {
 
     getUserByTokenDevice: async (token_device_id:number, user_account:number, slug:string):Promise<user_token_account|undefined> => {
 
-        const resUser = await query(`
+        const conn = await multiTransaction()
+
+        const resUser = await conn.query(`
             select 
                 user.id as user_id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
                 client.id as client_id,
@@ -73,17 +79,22 @@ const user_repo = {
 
         `, { binds: [token_device_id, user_account, slug]})
 
-        if(resUser.error) return undefined
+        if(resUser.error) {
+            await conn.finish()
+            return undefined
+        }
+            
 
         const result = (resUser.rows as user_token_account[])
 
         if(result.length == 0){
+            await conn.finish()
             return undefined
         }
 
         const user_full = result[0]
 
-        const permissionsSel = await query(`
+        const permissionsSel = await conn.query(`
             select service_actions.slug
               from user_permission
                 join 
@@ -96,6 +107,8 @@ const user_repo = {
             binds:[user_full.user_id]
         })
 
+        await conn.finish()
+
         let permissions = permissionsSel.rows as {slug:string}[]
         user_full.permissions = permissions.length == 0 ? [] : permissions.map(val => val.slug)
 
@@ -104,8 +117,10 @@ const user_repo = {
     },
 
     getDataFromSession: async (user_id:number):Promise<user_token_account|undefined> => {
+        
+        const conn = await multiTransaction()
 
-        const respReqUser = await query(`
+        const respReqUser = await conn.query(`
         select 
                 user.id as user_id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
                 account.nome, account.email,
@@ -121,7 +136,10 @@ const user_repo = {
         
         const dataResp = respReqUser.rows as user_token_account[]
 
-        if(respReqUser.error || dataResp.length == 0) return undefined
+        if(respReqUser.error || dataResp.length == 0) {
+            await conn.finish()
+            return undefined
+        }
 
         return dataResp[0]
 
@@ -130,14 +148,23 @@ const user_repo = {
 
     blockUser: async (blocked:boolean, user_id:number, client_id?:number) => {
 
+        const conn = await multiTransaction()
+
         if(client_id){
-            const respquser = await query(`select id from user_client where user_id = ${user_id} and client_id = ${client_id}`)
+            const respquser = await conn.query(`select id from user_client where user_id = ${user_id} and client_id = ${client_id}`)
             if(respquser.error || (respquser.rows as any[]).length == 0){
+                await conn.rollBack()
                 return false
             }
         }
 
-        return !(await execute(`update user set ativo = ${blocked ? 0 : 1} where id = ${user_id}`)).error
+        let status = !(await execute(`update user set ativo = ${blocked ? 0 : 1} where id = ${user_id}`)).error
+        if(!status){
+            conn.rollBack()
+        } else {
+            conn.finish()
+        }
+        return conn
     },
 
     update:async (permissions:number[], user_id:number) => {
@@ -147,6 +174,7 @@ const user_repo = {
         const respexec = await conn.execute('delete from user_permission where user_id = '+user_id)
 
         if(respexec.error){
+            await conn.rollBack()
             return false
         }
 
@@ -173,13 +201,20 @@ const user_repo = {
         
         let account_id = 0
 
-        if(resp.error) return false
+        if(resp.error){
+            await conn.rollBack()
+            return false
+        } 
+            
 
         if((resp.rows as any[]).length == 0){
             
             let idResp = (await account_repo.registerTemp(email, conn)).insertId
 
-            if(!idResp) return false
+            if(!idResp){
+                await conn.rollBack()
+                return false
+            }
             
             account_id = idResp
 
@@ -200,6 +235,7 @@ const user_repo = {
                      and account.id            = ${account_id}           
             `)
             if((respCheckAcc.rows as any[]).length > 0){
+                await conn.rollBack()
                 return false
             }
         }
@@ -215,6 +251,7 @@ const user_repo = {
 
 
         if(saveUser.error){
+            await conn.rollBack()
             return false
         }
 
@@ -229,6 +266,7 @@ const user_repo = {
             `)
 
             if(clientuserExec.error){
+                await conn.rollBack()
                 return false
             }
 
@@ -248,7 +286,11 @@ const user_repo = {
             insert += values.substring(0, values.length - 1)
             
             const savePermissions = await conn.execute(insert)
-            if(savePermissions.error) return false
+            if(savePermissions.error) {
+                await conn.rollBack()
+                return false
+            }
+                
             
         }
         

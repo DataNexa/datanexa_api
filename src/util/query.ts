@@ -122,7 +122,7 @@ class MultiTransaction {
 }
 
 const multiTransaction = async ():Promise<MultiTransaction> => {
-    const conn = await mysqli().getConnection()
+    const conn = await mysqli.getConnection()
     const mult = new MultiTransaction(conn)
     await mult.begin()
     return mult
@@ -137,7 +137,7 @@ const genQueryString = (query:query_obj) => {
 const query = async (query:string, oriented?:query_oriented):Promise<response_query> => { 
     try {
 
-        let [result] = await mysqli().query(query, oriented?.binds)
+        let [result] = await mysqli.query(query, oriented?.binds)
 
         if(oriented?.res){
             if(oriented?.notEmptyRows && result )
@@ -170,7 +170,7 @@ const query = async (query:string, oriented?:query_oriented):Promise<response_qu
 
 const execute = async (query:string, oriented?:execute_oriented):Promise<response_query> => { 
     try {
-        const [result] = await mysqli().execute(query, oriented?.binds)
+        const [result] = await mysqli.execute(query, oriented?.binds)
         return {
             error:false,
             rows:result

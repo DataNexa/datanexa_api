@@ -20,7 +20,7 @@ export default ():Express => {
         origin: "*"
     };
     app.use(cors(cors_options))
-    app.use(express.json())
+    app.use('/', express.json())
     app.use('/', UserFactory)
     routes(app)
     return app

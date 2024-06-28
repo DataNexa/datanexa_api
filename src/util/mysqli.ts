@@ -3,12 +3,15 @@ import { createPool, RowDataPacket, QueryError, QueryResult, Pool, PoolConnectio
 
 const database = globals.database
 
-const mysqli   = () => createPool({
+const mysqli   = createPool({
     host:database.host,
     user:database.user,
     password:database.pass,
     port:database.port,
-    database:database.name
+    database:database.name,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 })
 
 

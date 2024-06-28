@@ -1,4 +1,4 @@
-import {Express} from "express"
+import express, {Express} from "express"
 import account_routes from "./account.route"
 import user_routes from "./user.route"
 import tarefas_route from "./tarefas.route"

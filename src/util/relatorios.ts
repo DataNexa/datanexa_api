@@ -16,6 +16,13 @@ const logo = `
     </svg>
 `
 
+function criarSlug(frase: string): string {
+    let slug = frase.trim().toLowerCase();
+    slug = slug.replace(/[^\w\s-]/g, ''); 
+    slug = slug.replace(/[\s]+/g, '-');
+    return slug;
+}
+
 interface pesquisa_info_i {
     titulo:string,
     quantidadePesquisados:number,
@@ -181,7 +188,6 @@ interface data_perfil_i {
 
 interface perfil_i {
     nome:string,
-    slug:string,
     data:data_perfil_i
 }
 
@@ -204,7 +210,7 @@ const template_legenda_pesquisa = (perfil:perfil_i):Content => {
         },
         // svg
         {
-            svg:createDonut(perfil.slug, 100, values),
+            svg:createDonut(criarSlug(perfil.nome), 100, values),
             height:100,
             margin:{
                 left:60,
@@ -407,14 +413,14 @@ interface pesquisa_i {
     questionarios:questionario_data_i[]
 }
 
-const genRelatorioPesquisa = (pesquisa:pesquisa_i) => {
+const genRelatorioPesquisa = (pesquisa:pesquisa_i):Promise<Uint8Array|undefined> => {
 
     const content = header_pesquisa(pesquisa.pesquisa_info)
     content.push(...perfil_pesquisa(pesquisa.perfis))
     content.push(...gen_questionario(pesquisa.questionarios))
-    return content
+    return createPDF(content)
 
 }
 
 
-export { genRelatorioPesquisa }
+export { genRelatorioPesquisa, pesquisa_i, pesquisa_info_i, perfil_i, questionario_data_i }

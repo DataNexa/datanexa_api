@@ -5,7 +5,10 @@ interface pesquisas_i {
     client_id:number,
     titulo:string,
     descricao:string,
-    ativo:number
+    ativo:number,
+    createAt?: string,
+    duration?: string,
+    quantParticipantes?: number
 }
 
 interface create_response {
