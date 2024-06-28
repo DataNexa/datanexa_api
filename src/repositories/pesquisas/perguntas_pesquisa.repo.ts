@@ -3,7 +3,8 @@ import { execute, query, multiTransaction } from "../../util/query"
 interface perguntas_pesquisa_i {
     id:number,
     pesquisa_id:number,
-    pergunta:string
+    pergunta:string,
+    options:{opcao_id:number, opcao_valor:number}[]
 }
 
 interface create_response {
@@ -26,55 +27,44 @@ const perguntas_pesquisa_repo = {
     list: async (pesquisa_id:number,client_id:number, injectString:string=''):Promise<perguntas_pesquisa_i[]|false> => {
             
         const resp = await query(` 
-        SELECT  perguntas_pesquisa.id,  perguntas_pesquisa.pesquisa_id,  perguntas_pesquisa.pergunta
-        from perguntas_pesquisa 
-             join pesquisas on perguntas_pesquisa.pesquisa_id = pesquisas.id 
-         join client on pesquisas.client_id = client.id 
- 
-         WHERE  pesquisas.id = ? and  client.id = ? 
+            SELECT  
+                perguntas_pesquisa.id,  
+                perguntas_pesquisa.pesquisa_id,  
+                perguntas_pesquisa.pergunta,
+                opcoes_pergunta_pesquisa.id as opcao_id,
+                opcoes_pergunta_pesquisa.valor as opcao_valor
+            from 
+                opcoes_pergunta_pesquisa
+                join perguntas_pesquisa on perguntas_pesquisa.id = opcoes_pergunta_pesquisa.pergunta_pesquisa_id
+                join pesquisas on perguntas_pesquisa.pesquisa_id = pesquisas.id 
+                join client on pesquisas.client_id = client.id 
+            WHERE  
+                perguntas_pesquisa.pesquisa_id = ? and pesquisas.client_id = ? 
+                order by perguntas_pesquisa.id
         ${injectString}`, {
             binds:[pesquisa_id,client_id]
-        })
+        })  
 
         if(resp.error) return false 
 
-        return (resp.rows as perguntas_pesquisa_i[])
-    },    
-    
-    unique: async (pesquisa_id:number,client_id:number,id:number):Promise<unique_response> =>  {
+        const result:{ [key:number] : perguntas_pesquisa_i } = {}
+        const rows = resp.rows as any
+
+        for(const row of rows){
+            
+            if(!result[row.id]){
+                const { id, pergunta, pesquisa_id } = row
+                const options = [] as {opcao_id:number, opcao_valor:number}[]
+                result[row.id] = { id, pergunta, pesquisa_id, options }
+            }
+
+            result[row.id].options.push({
+                opcao_id:row.opcao_id,
+                opcao_valor:row.opcao_valor
+            })
+        }
         
-        const resp = await query(` 
-        SELECT  perguntas_pesquisa.id,  perguntas_pesquisa.pesquisa_id,  perguntas_pesquisa.pergunta
-        from perguntas_pesquisa 
-             join pesquisas on perguntas_pesquisa.pesquisa_id = pesquisas.id 
-         join client on pesquisas.client_id = client.id 
- 
-         WHERE  pesquisas.id = ? and  client.id = ? 
-            and perguntas_pesquisa.id = ? `, {
-            binds:[pesquisa_id,client_id,id]
-        })
-
-        if(resp.error) return {
-            error:true,
-            code:500,
-            message:'Erro no servidor'
-        } 
-
-        const rows = (resp.rows as perguntas_pesquisa_i[])
-
-        if(rows.length == 0) return {
-            error:true,
-            code:404,
-            message:'Registro não encontrado'
-        }  
-
-        return {
-            error:false,
-            code:200,
-            message:'',
-            row: rows[0]
-        }  
-
+        return Object.values(result)
     },    
     
     create: async (pesquisa_id:number,pergunta:string,client_id:number):Promise<create_response> => {

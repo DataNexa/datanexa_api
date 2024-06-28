@@ -443,6 +443,7 @@ const account_repo = {
             });
 
         if(qacc.error){
+            await conn.rollBack()
             return {
                 error:true,
                 error_message:'erro no banco de dados - 1'
@@ -451,6 +452,7 @@ const account_repo = {
 
         const infoacc = (qacc.rows as any[])
         if(infoacc.length == 0){
+            await conn.rollBack()
             return {
                 error:true,
                 error_message: 'Código não encontrado'
@@ -458,6 +460,7 @@ const account_repo = {
         }
 
         if(infoacc[0].expired || Date.now() > (new Date(infoacc[0].expirein)).getTime()){
+            await conn.rollBack()
             return {
                 error:true,
                 error_message:'Código expirado'
@@ -468,6 +471,7 @@ const account_repo = {
         const recover_id = infoacc[0].recover_id
 
         if((await conn.execute(`update recover set expired = 1 where id = ${recover_id}`)).error){
+            await conn.rollBack()
             return {
                 error:true,
                 error_message: 'erro no banco de dados - 2'
@@ -475,6 +479,7 @@ const account_repo = {
         }
 
         if((await conn.execute(`update account set confirmed = 1 where id = ${account_id}`)).error){
+            await conn.rollBack()
             return {
                 error:true,
                 error_message:'erro no banco de dados - 3'

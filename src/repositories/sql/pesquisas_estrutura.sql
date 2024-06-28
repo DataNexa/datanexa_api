@@ -41,8 +41,6 @@ create table if not exists perguntas_perfil_pesquisa (
 create table if not exists respostas_pesquisa (
     id bigint(255) not null auto_increment,
     pesquisa_id bigint(255) not null,
-    nome varchar(255) not null,
-    sobrenome varchar(255),
 
     foreign key(pesquisa_id) 
         references pesquisas(id),

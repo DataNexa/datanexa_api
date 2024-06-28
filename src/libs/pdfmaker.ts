@@ -314,8 +314,8 @@ class Document {
         }
 
         if(this.pdfDoc){
-            const pdfBytes = await this.pdfDoc.save();
-            fs.writeFileSync('./test.pdf', pdfBytes)
+            return await this.pdfDoc.save();
+            // fs.writeFileSync('./test.pdf', pdfBytes)
         }
 
     }
@@ -337,7 +337,7 @@ class PDFMaker {
     }
 
     async draw(){
-        await this.document.draw(this.content)
+        return await this.document.draw(this.content)
     }
 
 }
@@ -353,7 +353,7 @@ async function createPDF(content:Content[]){
         },
         height:100
     })
-    await pdf.draw()
+    return await pdf.draw()
 
 }
 

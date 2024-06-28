@@ -10,8 +10,10 @@ interface response_i {
 
 export default (res:Response, dataResponse:response_i = { code:200 }, next?:NextFunction) => {
     
+    res.setHeader('Content-Type', 'application/json');
+    
     const user = res.user
-
+    
     if(user.isNewSession()){
         dataResponse.session = user.getSession()
     }

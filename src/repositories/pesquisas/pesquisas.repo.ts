@@ -5,7 +5,10 @@ interface pesquisas_i {
     client_id:number,
     titulo:string,
     descricao:string,
-    ativo:number
+    ativo:number,
+    createAt?: string,
+    duration?: string,
+    quantParticipantes?: number
 }
 
 interface create_response {
@@ -22,10 +25,16 @@ interface unique_response {
     row?:pesquisas_i
 }
 
+interface resposta_response {
+    error:boolean,
+    message:string,
+    code:number
+}
+
 interface stats {
     perfil:{
         [key:number]:{
-            pergunta:string,
+            pergunta:string,    
             options:{
                 valor:string,
                 votos:number
@@ -49,21 +58,22 @@ const pesquisas_repo = {
     list: async (client_id:number, injectString:string=''):Promise<pesquisas_i[]|false> => {
             
         const resp = await query(` 
-        SELECT  
-            pesquisas.id,  
-            pesquisas.client_id,  
-            pesquisas.titulo,  
-            pesquisas.descricao,  
-            pesquisas.ativo,
-            pesquisas.createAt,
-            pesquisas.duration,
-            (select count(*) from perguntas_pesquisa where pesquisa_id = pesquisas.id) as quantPerguntas,
-            (select count(*) from respostas_pesquisa where pesquisa_id = pesquisas.id) as quantParticipantes
-        from pesquisas 
-             join client on pesquisas.client_id = client.id 
- 
-         WHERE  client.id = ?
-         and pesquisas.ativo < 3
+            SELECT  
+                pesquisas.id,  
+                pesquisas.client_id,  
+                pesquisas.titulo,  
+                pesquisas.descricao,  
+                pesquisas.ativo,
+                pesquisas.createAt,
+                pesquisas.duration,
+                (select count(*) from perguntas_pesquisa where pesquisa_id = pesquisas.id) as quantPerguntas,
+                (select count(*) from respostas_pesquisa where pesquisa_id = pesquisas.id) as quantParticipantes
+            from pesquisas 
+                join client on pesquisas.client_id = client.id 
+    
+            WHERE client.id = ?
+                    and pesquisas.ativo < 3
+            ORDER BY pesquisas.id DESC
         ${injectString}`, {
             binds:[client_id]
         })
@@ -117,13 +127,26 @@ const pesquisas_repo = {
 
     },    
     
-    create: async (client_id:number,titulo:string,descricao:string,ativo:number):Promise<create_response> => {
-            
+    create: async (client_id:number,titulo:string,descricao:string,ativo:number, termino:string = ''):Promise<create_response> => {
+        
+        
+        const hoje = new Date()
+
+        let strFields = '(client_id, titulo, descricao, ativo, createAt'+(termino == ''?')':', duration)')
+        let valFields = '(?,?,?,?,?'+(termino == ''?')':',?)')
+
+        let binds = [client_id,titulo,descricao,ativo, hoje]
+
+        if(termino != ""){
+            const limt = new Date(termino)
+            binds.push(limt)
+        }
+
         const resp = await execute(`
-        insert into pesquisas(client_id, titulo, descricao, ativo) 
-        VALUES (?,?,?,?)
+            insert into pesquisas ${strFields}
+            VALUES ${valFields}
          `, {
-            binds:[client_id,titulo,descricao,ativo]
+            binds:binds
         })
 
         if(resp.error && resp.error_code == 1062) return {
@@ -280,11 +303,87 @@ const pesquisas_repo = {
 
         return stats
 
+    },
+
+    responder: async (client_id:number, id:number, options_perfil:number[], options_questionario:number[]):Promise<resposta_response> => {
+
+        const conn = await multiTransaction()
+
+        const checkPesquisa = await conn.query(`select id from pesquisas where client_id = ? and id = ?`, {
+            binds:[client_id, id]
+        })
+
+        if(checkPesquisa.error || (checkPesquisa.rows as any[]).length == 0){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Essa pesquisa não existe ou não é do cliente'
+            }
+        }
+
+   
+        const options_perfil_final   = options_perfil.filter((value, index, self) => self.indexOf(value) === index);
+
+        const options_quest_final   = options_questionario.filter((value, index, self) => self.indexOf(value) === index);
+
+        const insertResposta = await conn.execute(`
+            insert into respostas_pesquisa (pesquisa_id) values (${id})
+        `);
+
+        if(insertResposta.error){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Não foi possível criar uma resposta'
+            }
+        }
+
+        const resposta_id = (insertResposta.rows as any).insertId
+
+        let insertPerfil = 'insert into respostas_perfil_pesquisa (resposta_id, opcao_pergunta_perfil_id) values '
+        for(const option of options_perfil_final){
+            insertPerfil += `(${resposta_id}, ${option}),`
+        }
+
+        const insertPerfilValues = await conn.execute(insertPerfil.substring(0, insertPerfil.length - 1))
+        if(insertPerfilValues.error){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Não foi possível criar uma resposta'
+            }
+        }
+
+
+        let insertQuestionario = 'insert into respostas_pergunta (resposta_id, opcao_pergunta_id) values '
+        for(const option of options_quest_final){
+            insertQuestionario += `(${resposta_id}, ${option}),`
+        }
+        
+        const insertQuestValues = await conn.execute(insertQuestionario.substring(0,insertQuestionario.length - 1))
+        if(insertQuestValues.error){
+            conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Não foi possível criar uma resposta'
+            }
+        }
+
+        await conn.finish()
+
+        return {
+            error:false,
+            code:200,
+            message:''
+        }
+        
     }
 
 }
-
-
 
 
 export { pesquisas_repo, pesquisas_i }

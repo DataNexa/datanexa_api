@@ -6,7 +6,6 @@ import { perguntas_pesquisa_repo, perguntas_pesquisa_i } from '../../repositorie
 
 export default {
 
-    
 
     list: async (req:Request, res:Response) => {
 
@@ -34,37 +33,6 @@ export default {
         response(res, {
             code:200,
             body:resp_repo
-        })
-
-    },
-
-    unique: async (req:Request, res:Response) => {
-
-        await body('pesquisa_id').isNumeric().run(req)
-        await body('client_id').isNumeric().run(req)
-        await body('id').isNumeric().run(req)
-
-
-        if(!validationResult(req).isEmpty()){
-            return response(res, {
-                code: 400,
-                message:"Bad Request"
-            })
-        }
-        
-        const { pesquisa_id,client_id,id } = req.body
-        const resp_repo = await perguntas_pesquisa_repo.unique(pesquisa_id,client_id,id)
-
-        if(resp_repo.error){
-            return response(res, {
-                code:resp_repo.code,
-                message: resp_repo.message
-            })
-        }
-
-        response(res, {
-            code:200,
-            body:resp_repo.row
         })
 
     },

@@ -42,45 +42,12 @@ const opcoes_pergunta_perfil_pesquisa_repo = {
         return (resp.rows as opcoes_pergunta_perfil_pesquisa_i[])
     },    
     
-    unique: async (pergunta_perfil_pesquisa_id:number,pesquisa_id:number,client_id:number,id:number):Promise<unique_response> =>  {
-        
-        const resp = await query(` 
-        SELECT  opcoes_pergunta_perfil_pesquisa.id,  opcoes_pergunta_perfil_pesquisa.pergunta_perfil_pesquisa_id,  opcoes_pergunta_perfil_pesquisa.valor
-        from opcoes_pergunta_perfil_pesquisa 
-             join perguntas_perfil_pesquisa on opcoes_pergunta_perfil_pesquisa.pergunta_perfil_pesquisa_id = perguntas_perfil_pesquisa.id 
-         join pesquisas on perguntas_perfil_pesquisa.pesquisa_id = pesquisas.id 
-         join client on pesquisas.client_id = client.id 
- 
-         WHERE  perguntas_perfil_pesquisa.id = ? and  pesquisas.id = ? and  client.id = ? 
-            and opcoes_pergunta_perfil_pesquisa.id = ? `, {
-            binds:[pergunta_perfil_pesquisa_id,pesquisa_id,client_id,id]
-        })
-
-        if(resp.error) return {
-            error:true,
-            code:500,
-            message:'Erro no servidor'
-        } 
-
-        const rows = (resp.rows as opcoes_pergunta_perfil_pesquisa_i[])
-
-        if(rows.length == 0) return {
-            error:true,
-            code:404,
-            message:'Registro não encontrado'
-        }  
-
-        return {
-            error:false,
-            code:200,
-            message:'',
-            row: rows[0]
-        }  
-
-    },    
     
-    create: async (pergunta_perfil_pesquisa_id:number,valor:string,pesquisa_id:number,client_id:number):Promise<create_response> => {
-            
+    
+    create: async (pergunta_perfil_pesquisa_id:number,valor:string, client_id:number):Promise<create_response> => {
+        
+        // TODO: verificar se o cliente_id está vinculado a pergunta_perfil_pesquisa_id
+
         const resp = await execute(`
         insert into opcoes_pergunta_perfil_pesquisa(pergunta_perfil_pesquisa_id, valor) 
         VALUES (?,?)
@@ -132,7 +99,7 @@ const opcoes_pergunta_perfil_pesquisa_repo = {
         return !resp.error
     },    
     
-    delete: async (pergunta_perfil_pesquisa_id:number,pesquisa_id:number,client_id:number,id:number):Promise<boolean> => {
+    delete: async (pergunta_perfil_pesquisa_id:number, client_id:number,id:number):Promise<boolean> => {
         
         const resp = await execute(`
          delete opcoes_pergunta_perfil_pesquisa 
@@ -141,8 +108,8 @@ const opcoes_pergunta_perfil_pesquisa_repo = {
          join pesquisas on perguntas_perfil_pesquisa.pesquisa_id = pesquisas.id 
          join client on pesquisas.client_id = client.id 
  
-        WHERE  perguntas_perfil_pesquisa.id = ? and  pesquisas.id = ? and  client.id = ?   and opcoes_pergunta_perfil_pesquisa.id = ? `, {
-            binds:[pergunta_perfil_pesquisa_id,pesquisa_id,client_id,id]
+        WHERE  perguntas_perfil_pesquisa.id = ? and  client.id = ?   and opcoes_pergunta_perfil_pesquisa.id = ? `, {
+            binds:[pergunta_perfil_pesquisa_id,client_id,id]
         })
 
         return !resp.error
