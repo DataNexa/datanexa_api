@@ -35,4 +35,60 @@ export default {
 
     },
 
+    manager: async (req:Request, res:Response) => {
+        
+        await body('client_id').isNumeric().run(req)
+        await body('monitoramento_id').isNumeric().run(req)
+        await body('prioridade').isInt({min:0}).run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { client_id, monitoramento_id, prioridade } = req.body
+
+        const resp_repo = await fila_monitoramento_repo.alterarFila(monitoramento_id, client_id, prioridade)
+
+        if(!resp_repo){
+            return response(res, {
+                code:500,
+                message:'Não foi possível alterar a fila de monitoramentos'
+            })
+        }
+
+        return response(res)
+
+    },
+
+    alterarStatusTask: async (req:Request, res:Response) =>{
+
+        await body('client_id').isNumeric().run(req)
+        await body('task_id').isNumeric().run(req)
+        await body('status').isInt({min:0}).run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { client_id, task_id, status } = req.body
+
+        const respo = await fila_monitoramento_repo.alterarStatusMonitoramentoTask(task_id, client_id, status)
+
+        if(!respo){
+            return response(res, {
+                code:500,
+                message:'Error'
+            })
+        }
+
+        response(res)
+
+    }
+
 }

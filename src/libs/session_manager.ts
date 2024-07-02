@@ -6,7 +6,8 @@ enum type_session {
     NOT_SESSION,
     SESSION,
     SESSION_TEMP,
-    TOKEN
+    TOKEN,
+    BOT
 }
 
 interface data_user_i {
@@ -43,7 +44,12 @@ interface header_i {
 
 interface data_session_i {
     header:header_i,
-    user:data_user_i
+    user:data_user_i|data_bot_i
+}
+
+interface data_bot_i {
+    slug:string,
+    locale:string
 }
 
 interface response_data_i { header:header_i, user?:data_user_i, token?:data_token_i, account?:data_account_i }
@@ -61,14 +67,20 @@ const generateSessionTemp = (data:data_account_i) => {
     return JWT.generate({alg:'sha512', type:type_session.SESSION_TEMP, expire_in:Date.now() + 1000 * 60 * 30}, data)
 }
 
+const generateBotToken = (data:data_bot_i) => {
+    return JWT.generate({alg:'sha512', type:type_session.BOT, expire_in:Date.now() + 1000 * 60 * 30}, data)
+}
+
 const getDataSession = (session:string):data_session_i => {
     try {
         const parts  = session.split('.')
         const header:header_i = JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8'))
-        const user:data_user_i = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'))
+        
+        const user:any = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'))
         return {
             header, user
         }
+        
     } catch (error) {
         return { 
             header:{ type: type_session.NOT_SESSION, expire_in: 1 }, 
@@ -110,5 +122,5 @@ const verifySession = (session:string, hash_salt:string = "", vtoken:number = 0)
     return datafinal
     
 }
-
-export { type_session, data_account_i, data_user_i, data_token_i, header_i, data_user_full_i, getDataSession, generateSession, verifySession, generateToken, generateSessionTemp}
+ 
+export { generateBotToken, data_bot_i, type_session, data_account_i, data_user_i, data_token_i, header_i, data_user_full_i, getDataSession, generateSession, verifySession, generateToken, generateSessionTemp}

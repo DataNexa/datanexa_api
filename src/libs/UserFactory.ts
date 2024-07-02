@@ -1,7 +1,7 @@
 import { User } from "./User";
 import { Request, Response, NextFunction } from "express"
 
-import { type_session, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, getDataSession, generateToken, data_user_full_i } from "./session_manager";
+import { type_session, data_bot_i, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, getDataSession, generateToken, data_user_full_i, generateBotToken } from "./session_manager";
 import response from "../util/response";
 import { account_repo, JOIN } from "../repositories/account.repo";
 import { user_repo, user_token_account } from "../repositories/user.repo";
@@ -22,6 +22,15 @@ const addDataUser = async (dataUser:data_user_full_i, user:User, save:boolean = 
     if(save) return await cache.saveDataUser(dataUser)
     return true
 
+}
+
+const generateBotData = (user:User, dataBot:data_bot_i) => {
+    user.setSlug(dataBot.slug)
+    user.setLocale(dataBot.locale)
+
+    // TODO: checagem para ver se o BOT está cadastrado no banco de dados
+
+    return true
 }
 
 const generateUser = async (session:string, dataUser:data_user_i, header:header_i, user:User):Promise<boolean> => {
@@ -86,8 +95,6 @@ const generateUserToken = async (dataToken:data_token_i, user:User):Promise<bool
     const token_device_id = dataToken.token_device_id
     const account_id = dataToken.account_id
 
-    // console.log(dataToken);
-    
     const userTokenReq = await account_repo.getAccount({
         id:account_id
     }, {
@@ -96,7 +103,7 @@ const generateUserToken = async (dataToken:data_token_i, user:User):Promise<bool
         values:[token_device_id]
     })
 
-    const vtoken_db = userTokenReq.token_account?.vtoken // resgatado no banco de dados
+    const vtoken_db = userTokenReq.token_account?.vtoken 
 
     if(vtoken_db != dataToken.vtoken){
         return false    
@@ -113,18 +120,18 @@ const generateUserToken = async (dataToken:data_token_i, user:User):Promise<bool
 export default async (req:Request, res:Response, next:NextFunction) => {
     
     const sess = typeof req.headers.session == 'string' ? req.headers.session : false
-    const user = new User()
-    res.user = user
-
+    
     if(sess){
         
         const dataSess = getDataSession(sess)
+        const user = new User()
+        res.user = user
 
         if(dataSess.header.type == type_session.SESSION){
 
             user.setSession(sess)
 
-            let status = await generateUser(sess, dataSess.user, dataSess.header, user)
+            let status = await generateUser(sess, (dataSess.user as data_user_i), dataSess.header, user)
             if(!status){
                 return response(res,{
                     code: 401
@@ -154,6 +161,18 @@ export default async (req:Request, res:Response, next:NextFunction) => {
             
             user.setTokenAccount(sess)
             let status = await generateUserToken(dataUser.token, user)
+            
+            if(!status){
+                return response(res,{
+                    code: 401
+                }, next)
+            }
+            
+        } else
+        if(dataUser && dataUser.token && dataUser.header.type == type_session.BOT){
+            
+            user.setTokenAccount(sess)
+            let status = generateBotData(user, (dataSess.user as data_bot_i))
             
             if(!status){
                 return response(res,{

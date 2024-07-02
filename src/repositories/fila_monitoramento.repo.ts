@@ -27,7 +27,6 @@ const fila_monitoramento_repo = {
             WHERE  
                 monitoramento_tasks.monitoramento_id = ? and  monitoramento_filas.client_id = ?
             order by monitoramento_filas.id DESC, monitoramento.prioridade ASC
-
         ${injectString}`, {
             binds:[ client_id ]
         })
@@ -101,6 +100,79 @@ const fila_monitoramento_repo = {
 
         return monitoramentosAtivos
     
+    },
+
+
+    alterarFila:async (monitoramento_id:number, client_id:number, prioridade:number) => {
+      
+        const conn = await multiTransaction()
+
+        const resp = await conn.query(`
+            select 1 from monitoramento 
+            where id = ${monitoramento_id}
+            and client_id = ${client_id}
+        `)
+
+        if(resp.error ||  (resp.rows as any[]).length == 0){
+            await conn.rollBack()
+            return false
+        }
+
+        const changeAll = await conn.execute(
+            `update monitoramento 
+                set prioridade = prioridade + 1 
+            where
+                prioridade >= ${prioridade}
+                and not prioridade < ${prioridade} 
+                and not id = ${monitoramento_id}
+                and client_id = ${client_id}
+            `)
+
+        if(changeAll.error){
+            await conn.rollBack()
+            return false
+        }
+
+        const changePriority = await conn.execute(`
+            update monitoramento
+            set prioridade = ${prioridade}
+            where id = ${monitoramento_id}
+        `)
+
+        if(changePriority.error){
+            await conn.rollBack()
+            return false
+        }
+
+        await conn.finish()
+
+    },
+
+    alterarStatusMonitoramentoTask: async (task_id:number, client_id:number, status:number) => {
+        
+        const conn = await multiTransaction();
+
+        const respExec = await conn.execute(`
+            update 
+                monitoramento_tasks
+            join 
+                monitoramento_filas on monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
+            set
+                monitoramento_tasks.task_status = ${status}
+            where 
+                monitoramento_filas.client_id = ${client_id} 
+            and 
+                monitoramento_tasks.id = ${task_id}
+        `)
+
+        if(respExec.error){
+            await conn.rollBack()
+            return false
+        }
+
+        await conn.finish()
+        return true 
+
     }
 
 }
