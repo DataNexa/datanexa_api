@@ -172,13 +172,116 @@ const monitoramento_repo = {
         }
 
     },    
+
+    alterarStatus: async (client_id:number, id:number, status:number):Promise<boolean> => {
+
+        const conn = await multiTransaction()
+        let resp:any
+
+        if(status == 0){
+            resp = conn.execute(`
+                update
+                    monitoramento
+                set ativo = 0, prioridade = 0
+                where 
+                    client_id = ${client_id}
+                    and id = ${id}
+            `)
+        } else {
+            resp = conn.execute(`
+                update
+                    monitoramento
+                set ativo = 1
+                where 
+                    client_id = ${client_id}
+                    and id = ${id}
+            `)
+        }
+
+        await conn.finish()
+        return !resp.error
+    },
+
+    alterarRepeticao: async (client_id:number, id:number, status:number) => {
+
+        const conn = await multiTransaction()
+        let resp:any
+
+        const respQ = await conn.query(`
+            SELECT 
+                mf.id as monitoramento_fila_id,
+                COUNT(mt.id) as total
+            FROM 
+                (SELECT id
+                FROM monitoramento_filas
+                WHERE client_id = ${client_id}
+                ORDER BY id DESC
+                LIMIT 1) mf
+            LEFT JOIN monitoramento_tasks mt
+            ON mt.monitoramento_fila_id = mf.id
+            AND mt.monitoramento_id = ${id}
+            GROUP BY mf.id;
+        `)
+
+        if(respQ.error){
+            await conn.rollBack()
+            return false
+        }
+
+        const result = (respQ.rows as any[])[0]
+
+        if(result.total == 0 && status == 1 && result.monitoramento_fila_id){
+            // inserir na ultima fila
+            const res = await conn.execute(`
+                insert into
+                monitoramento_tasks (monitoramento_id, monitoramento_fila_id, task_status )
+                values (?,?,?)
+            `, {
+                binds:[ id, result.monitoramento_fila_id, 1 ]
+            })
+
+            if(res.error){
+                await conn.rollBack()
+                return false
+            }
+        }
+
+        if(status == 0){
+            resp = conn.execute(`
+                update
+                    monitoramento
+                set prioridade = 0
+                where 
+                    client_id = ${client_id}
+                    and id = ${id}
+            `)
+        } else {
+            resp = conn.execute(`
+                update
+                    monitoramento
+                set prioridade = 1
+                where 
+                    client_id = ${client_id}
+                    and id = ${id}
+            `)
+        }
+
+        await conn.finish()
+        return !resp.error
+
+    },
     
-    update: async (client_id:number,titulo:string,objetivo:string,ativo:number,creatat:string,pesquisa:string,alvo:string,id:number):Promise<boolean> => {
+    update: async (client_id:number,titulo:string,descicao:string,pesquisa:string,alvo:string,id:number):Promise<boolean> => {
         
-        const resp = await execute(`update monitoramento      join client on monitoramento.client_id = client.id 
-      set  monitoramento.client_id = ?,  monitoramento.titulo = ?,  monitoramento.objetivo = ?,  monitoramento.ativo = ?,  monitoramento.creatat = ?,  monitoramento.pesquisa = ?,  monitoramento.alvo = ?
-         WHERE  client.id = ?  and monitoramento.id = ? `, {
-            binds:[client_id,titulo,objetivo,ativo,creatat,pesquisa,alvo,client_id,id]
+        const resp = await execute(`
+        update monitoramento      
+            join client on monitoramento.client_id = client.id 
+        set  monitoramento.titulo = ?,  
+             monitoramento.descricao = ?,  
+             monitoramento.pesquisa = ?,  
+             monitoramento.alvo = ?
+         WHERE client.id = ?  and monitoramento.id = ? `, {
+            binds:[titulo,descicao,pesquisa,alvo,client_id,id]
         })
 
         return !resp.error

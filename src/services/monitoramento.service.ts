@@ -4,6 +4,7 @@ import { body, validationResult } from 'express-validator'
 
 import { monitoramento_repo, monitoramento_i } from '../repositories/monitoramento.repo'
 
+
 export default {
 
     
@@ -106,9 +107,7 @@ export default {
 
         await body('client_id').isNumeric().run(req)
         await body('titulo').isString().trim().run(req)
-        await body('objetivo').isString().trim().run(req)
-        await body('ativo').isNumeric().run(req)
-        await body('creatat').isString().trim().run(req)
+        await body('descricao').isString().trim().run(req)
         await body('pesquisa').isString().trim().run(req)
         await body('alvo').isString().trim().run(req)
         await body('id').isNumeric().run(req)
@@ -121,8 +120,8 @@ export default {
             })
         }
         
-        const { client_id,titulo,objetivo,ativo,creatat,pesquisa,alvo,id } = req.body
-        const resp_repo = await monitoramento_repo.update(client_id,titulo,objetivo,ativo,creatat,pesquisa,alvo,id)
+        const { client_id,titulo,descricao,pesquisa,alvo,id } = req.body
+        const resp_repo = await monitoramento_repo.update(client_id,titulo,descricao,pesquisa,alvo,id)
 
         if(!resp_repo){
             return response(res, {
@@ -161,5 +160,61 @@ export default {
         response(res)
 
     },
+
+    ativar: async (req:Request, res:Response) => {
+
+        await body('client_id').isNumeric().run(req)
+        await body('status').isBoolean().run(req)
+        await body('id').isNumeric().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { client_id, status, id } = req.body
+
+        const resp = await monitoramento_repo.alterarStatus(client_id, id, status)
+
+        if(!resp) {
+            return response(res, {
+                code: 500,
+                message: "Erro ao tentar alterar status do monitoramento"
+            })
+        }
+
+        response(res)
+
+    },
+
+    repetir: async (req:Request, res:Response) => {
+
+        await body('client_id').isNumeric().run(req)
+        await body('status').isBoolean().run(req)
+        await body('id').isNumeric().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { client_id, status, id } = req.body
+
+        const resp = await monitoramento_repo.alterarRepeticao(client_id, id, status)
+
+        if(!resp) {
+            return response(res, {
+                code: 500,
+                message: "Erro ao tentar alterar repetição do monitoramento"
+            })
+        }
+
+        response(res)
+
+    } 
 
 }

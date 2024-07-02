@@ -1,5 +1,5 @@
 enum type_user {
-    ANONIMUS, GHOST, ADMIN, ADMIN_CLIENT, USER_CLIENT
+    ANONIMUS, GHOST, ADMIN, ADMIN_CLIENT, USER_CLIENT, BOT
 }
 
 interface user_i {
@@ -33,6 +33,11 @@ class User {
     private nome:string = ''
     private email:string = ''
     private encPass:string = ''
+    private locale:string = ''
+
+    public setLocale(locale:string) {
+        this.locale = locale
+    }
 
     public getAccountId() {
         return this.account_id
@@ -137,6 +142,10 @@ class User {
 
     public getClientId(){
         return this.client_id
+    }
+
+    public getLocale(){
+        return this.locale
     }
 
     public getJSON():user_i {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authorization_route } from '../util/autorization'
+import { authorization_route, onlyBot,botAndUserAuthorized } from '../util/autorization'
 
 import fila_monitoramento_service from '../services/fila_monitoramento.service'
 
@@ -14,7 +14,10 @@ export default () => {
     router.post('/create', authorization_route('anyUserAuthorized', ['monitoramento@create']), monitoramento_service.create)
     router.post('/update', authorization_route('anyUserAuthorized', ['monitoramento@update']), monitoramento_service.update)
     router.post('/delete', authorization_route('anyUserAuthorized', ['monitoramento@delete']), monitoramento_service.delete)
-    router.post('/fila', authorization_route('anyUserAuthorized', ['monitoramento@list']), fila_monitoramento_service.list)
+    router.post('/fila_manager', authorization_route('anyUserAuthorized', ['monitoramento@update']), fila_monitoramento_service.manager)
+    router.post('/fila_list', botAndUserAuthorized(['monitoramento@list']), fila_monitoramento_service.list)
+    
+    router.post('/alterarStatusTask', onlyBot, fila_monitoramento_service.alterarStatusTask)
 
     return router
 }

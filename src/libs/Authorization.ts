@@ -83,6 +83,15 @@ class Authorization {
 
     }
 
+    onlyBotAuthorized():boolean|void {
+        if(type_user.BOT == this.res.user.getTypeUser()){
+            if(this.next) {
+                return this.next()
+            }
+            return true
+        }
+    }
+
     anyUserAuthorized():boolean|void{
         
         const client_id_sended = parseInt(this.req.body.client_id)
