@@ -25,20 +25,26 @@ const fila_monitoramento_repo = {
                 join monitoramento_tasks on monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
                 join monitoramento on monitoramento.id = monitoramento_tasks.monitoramento_id
             WHERE  
-                monitoramento_tasks.monitoramento_id = ? and  monitoramento_filas.client_id = ?
+                monitoramento_filas.client_id = ?
             order by monitoramento_filas.id DESC, monitoramento.prioridade ASC
         ${injectString}`, {
             binds:[ client_id ]
         })
-        
+
         if(resp.error) {
             await conn.rollBack()
             return false 
         }
 
-        if((resp.rows as any[]).length > 0){
-            const lista_monitoramento = resp.rows as fila_monitoramento_i[]
-            return lista_monitoramento
+        const lista_monitoramento = resp.rows as fila_monitoramento_i[]
+
+        if(lista_monitoramento.length > 0){
+            for(const mon of lista_monitoramento){
+                if(mon.task_status < 3){
+                    await conn.finish()
+                    return lista_monitoramento
+                }
+            }
         }
 
         const getAllMonitoramentosAtivos = await conn.query(`
@@ -70,7 +76,6 @@ const fila_monitoramento_repo = {
         }
 
         const monitoramentosAtivos = (getAllMonitoramentosAtivos.rows as any[])
-
         if(monitoramentosAtivos.length == 0){
             await conn.finish()
             return []
@@ -97,6 +102,8 @@ const fila_monitoramento_repo = {
             await conn.rollBack()
             return false
         }
+
+        await conn.finish()
 
         return monitoramentosAtivos
     
@@ -145,6 +152,8 @@ const fila_monitoramento_repo = {
         }
 
         await conn.finish()
+
+        return true
 
     },
 
