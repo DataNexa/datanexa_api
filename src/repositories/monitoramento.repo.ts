@@ -6,10 +6,14 @@ interface monitoramento_i {
     titulo:string,
     descricao:string,
     ativo:number,
+    repetir:number,
     creatat:string,
     pesquisa:string,
     alvo:string,
-    stats?:publicacao_stats[]
+    stats?:publicacao_stats[],
+    negativos?:number,
+    positivos?:number,
+    neutros?:number
 }
 
 interface create_response {
@@ -40,19 +44,34 @@ const monitoramento_repo = {
     list: async (client_id:number, injectString:string=''):Promise<monitoramento_i[]|false> => {
             
         const resp = await query(` 
-        SELECT  
-            monitoramento.id,  
-            monitoramento.client_id,  
-            monitoramento.titulo,  
-            monitoramento.descricao,  
-            monitoramento.ativo,  
-            monitoramento.creatat,  
-            monitoramento.pesquisa,  
-            monitoramento.repetir,
-            monitoramento.alvo
-        from monitoramento 
-             join client on monitoramento.client_id = client.id 
-         WHERE  client.id = ? 
+            SELECT  
+                m.id,  
+                m.client_id,  
+                m.titulo,  
+                m.descricao,  
+                m.ativo,  
+                m.creatat,  
+                m.pesquisa,  
+                m.repetir,
+                m.alvo,
+                COALESCE(negativos.count, 0) as negativos,
+                COALESCE(neutros.count, 0) as neutros,
+                COALESCE(positivos.count, 0) as positivos
+            FROM 
+                monitoramento m
+            JOIN 
+                client c ON m.client_id = c.id
+            LEFT JOIN 
+                (SELECT monitoramento_id, COUNT(*) as count FROM publicacoes WHERE avaliacao = 0 GROUP BY monitoramento_id) negativos 
+                ON m.id = negativos.monitoramento_id
+            LEFT JOIN 
+                (SELECT monitoramento_id, COUNT(*) as count FROM publicacoes WHERE avaliacao = 1 GROUP BY monitoramento_id) neutros 
+                ON m.id = neutros.monitoramento_id
+            LEFT JOIN 
+                (SELECT monitoramento_id, COUNT(*) as count FROM publicacoes WHERE avaliacao = 2 GROUP BY monitoramento_id) positivos 
+                ON m.id = positivos.monitoramento_id
+            WHERE  
+                c.id = ?;
         ${injectString}`, {
             binds:[client_id]
         })
@@ -73,6 +92,7 @@ const monitoramento_repo = {
                 monitoramento.titulo,  
                 monitoramento.descricao,  
                 monitoramento.ativo,  
+                monitoramento.repetir, 
                 monitoramento.creatat,  
                 monitoramento.pesquisa,  
                 monitoramento.alvo
