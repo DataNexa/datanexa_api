@@ -193,16 +193,16 @@ const monitoramento_repo = {
 
     },    
 
-    alterarStatus: async (client_id:number, id:number, status:number):Promise<boolean> => {
+    alterarStatus: async (client_id:number, id:number, status:boolean):Promise<boolean> => {
 
         const conn = await multiTransaction()
         let resp:any
 
-        if(status == 0){
+        if(!status){
             resp = conn.execute(`
                 update
                     monitoramento
-                set ativo = 0, prioridade = 0
+                set ativo = 0, repetir = 0
                 where 
                     client_id = ${client_id}
                     and id = ${id}
@@ -222,10 +222,9 @@ const monitoramento_repo = {
         return !resp.error
     },
 
-    alterarRepeticao: async (client_id:number, id:number, status:number) => {
+    alterarRepeticao: async (client_id:number, id:number, status:boolean) => {
 
         const conn = await multiTransaction()
-        let resp:any
 
         const respQ = await conn.query(`
             SELECT 
@@ -250,7 +249,7 @@ const monitoramento_repo = {
 
         const result = (respQ.rows as any[])[0]
 
-        if(result.total == 0 && status == 1 && result.monitoramento_fila_id){
+        if(result.total == 0 && status && result.monitoramento_fila_id){
             // inserir na ultima fila
             const res = await conn.execute(`
                 insert into
@@ -266,28 +265,30 @@ const monitoramento_repo = {
             }
         }
 
-        if(status == 0){
-            resp = conn.execute(`
+        const changeExec = status ? 
+            await conn.execute(`
                 update
                     monitoramento
-                set prioridade = 0
+                set repetir = 1
+                where 
+                    client_id = ${client_id}
+                    and id = ${id}
+        `) : await conn.execute(`
+                update
+                    monitoramento
+                set repetir = 0
                 where 
                     client_id = ${client_id}
                     and id = ${id}
             `)
-        } else {
-            resp = conn.execute(`
-                update
-                    monitoramento
-                set prioridade = 1
-                where 
-                    client_id = ${client_id}
-                    and id = ${id}
-            `)
+
+        if(changeExec.error){
+            await conn.rollBack()
+            return false
         }
 
         await conn.finish()
-        return !resp.error
+        return true
 
     },
     

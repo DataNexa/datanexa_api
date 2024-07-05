@@ -16,7 +16,9 @@ export default () => {
     router.post('/delete', authorization_route('anyUserAuthorized', ['monitoramento@delete']), monitoramento_service.delete)
     router.post('/fila_manager', authorization_route('anyUserAuthorized', ['monitoramento@update']), fila_monitoramento_service.manager)
     router.post('/fila_list', botAndUserAuthorized(['monitoramento@list']), fila_monitoramento_service.list)
-    
+    router.post('/ativar', authorization_route('anyUserAuthorized', ['monitoramento@update']), monitoramento_service.ativar)
+    router.post('/repetir', authorization_route('anyUserAuthorized', ['monitoramento@update']), monitoramento_service.repetir)
+
     router.post('/alterarStatusTask', onlyBot, fila_monitoramento_service.alterarStatusTask)
 
     return router
