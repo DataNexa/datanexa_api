@@ -74,7 +74,6 @@ export default {
         await body('descricao').isString().trim().run(req)
         await body('ativo').isNumeric().run(req)
 
-
         if(!validationResult(req).isEmpty()){
             return response(res, {
                 code: 400,

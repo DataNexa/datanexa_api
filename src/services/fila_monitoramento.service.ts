@@ -38,8 +38,7 @@ export default {
     manager: async (req:Request, res:Response) => {
         
         await body('client_id').isNumeric().run(req)
-        await body('monitoramento_id').isNumeric().run(req)
-        await body('prioridade').isInt({min:0}).run(req)
+        await body('fila_ids').isArray().run(req)
 
         if(!validationResult(req).isEmpty()){
             return response(res, {
@@ -48,9 +47,9 @@ export default {
             })
         }
 
-        const { client_id, monitoramento_id, prioridade } = req.body
+        const { client_id, fila_ids } = req.body
 
-        const resp_repo = await fila_monitoramento_repo.alterarFila(monitoramento_id, client_id, prioridade)
+        const resp_repo = await fila_monitoramento_repo.alterarFila(client_id, fila_ids)
 
         if(!resp_repo){
             return response(res, {

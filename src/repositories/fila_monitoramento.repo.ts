@@ -110,7 +110,63 @@ const fila_monitoramento_repo = {
     },
 
 
-    alterarFila:async (monitoramento_id:number, client_id:number, prioridade:number) => {
+    alterarFila: async (client_id:number, order_ids:number[]) => {
+
+        const conn = await multiTransaction()
+
+        const getAllMonitoramentos = await conn.query(`
+            SELECT id FROM monitoramento WHERE client_id = ?
+        `, { binds: [client_id]})
+
+        if (getAllMonitoramentos.error) {
+            await conn.rollBack
+            return false
+        }
+
+        const rows = getAllMonitoramentos.rows as any[]
+        const monitoramentoIds = rows.map(row => row.id)
+
+        const allValid = monitoramentoIds.every(id => order_ids.includes(id))
+        if (!allValid) {
+            await conn.rollBack
+            return false
+        }
+
+        const changePrioridades = await conn.execute(`
+            UPDATE monitoramento SET prioridade = 0 WHERE client_id = ?
+        `, { binds: [client_id]})
+        
+        if (changePrioridades.error) {
+            await conn.rollBack
+            return false
+        }
+
+        const updates = order_ids.map((id, index) => ({
+            id,
+            prioridade: index + 1
+        }))
+        
+        const updateQuery = `
+            UPDATE monitoramento 
+            SET prioridade = CASE id 
+                ${updates.map(({ id, prioridade }) => `WHEN ${id} THEN ${prioridade}`).join(' ')}
+                ELSE prioridade
+            END
+            WHERE id IN (${updates.map(({ id }) => id).join(', ')})
+        `
+
+        const updateResult = await conn.execute(updateQuery)
+        if (updateResult.error) {
+            await conn.rollBack
+            return false
+        }
+
+        await conn.finish() 
+        return true
+        
+    },
+
+    alterarFilaUnicoItem:async (monitoramento_id:number, client_id:number, prioridade:number) => {
       
         const conn = await multiTransaction()
 

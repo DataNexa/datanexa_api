@@ -45,7 +45,7 @@ create table if not exists monitoramento_tasks (
     foreign key(monitoramento_fila_id)
         references monitoramento_filas(id),
 
-    primary key(id)
+    primary key(id) 
 
 ) ENGINE=InnoDB;
 
