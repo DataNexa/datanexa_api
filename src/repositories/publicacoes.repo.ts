@@ -34,12 +34,23 @@ const publicacoes_repo = {
     list: async (monitoramento_id:number,client_id:number, injectString:string=''):Promise<publicacoes_i[]|false> => {
             
         const resp = await query(` 
-        SELECT  publicacoes.id,  publicacoes.monitoramento_id,  publicacoes.titulo,  publicacoes.texto,  publicacoes.avaliacao,  publicacoes.link,  publicacoes.local_pub,  publicacoes.curtidas,  publicacoes.compartilhamento,  publicacoes.visualizacoes,  publicacoes.data_pub
-        from publicacoes 
-             join monitoramento on publicacoes.monitoramento_id = monitoramento.id 
-         join client on monitoramento.client_id = client.id 
- 
-         WHERE  monitoramento.id = ? and  client.id = ? 
+            SELECT  
+                publicacoes.id,  
+                publicacoes.monitoramento_id,  
+                publicacoes.titulo,  
+                publicacoes.texto,  
+                publicacoes.avaliacao,  
+                publicacoes.link,  
+                publicacoes.local_pub,  
+                publicacoes.curtidas,  
+                publicacoes.compartilhamento,  
+                publicacoes.visualizacoes,  
+                publicacoes.data_pub
+            FROM publicacoes 
+                JOIN monitoramento on publicacoes.monitoramento_id = monitoramento.id 
+                JOIN client on monitoramento.client_id = client.id 
+            WHERE monitoramento.id = ? and client.id = ? 
+            ORDER BY id DESC
         ${injectString}`, {
             binds:[monitoramento_id,client_id]
         })

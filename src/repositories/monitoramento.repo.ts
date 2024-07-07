@@ -13,7 +13,8 @@ interface monitoramento_i {
     stats?:publicacao_stats[],
     negativos?:number,
     positivos?:number,
-    neutros?:number
+    neutros?:number,
+    hashtags?:string[]
 }
 
 interface create_response {
@@ -41,6 +42,38 @@ interface publicacao_stats {
 const monitoramento_repo = {
         
     
+    listPriority: async (client_id:number) => {
+
+        const conn = await multiTransaction()
+
+        const resp = await conn.query(` 
+            SELECT  
+                monitoramento.id,  
+                monitoramento.titulo,  
+                monitoramento.descricao,  
+                monitoramento.prioridade
+            from monitoramento 
+                join client on monitoramento.client_id = client.id
+            WHERE  client.id = ? and monitoramento.ativo = 1 
+            ORDER BY monitoramento.prioridade ASC
+            `, {
+            binds:[client_id]
+        })
+
+        if(resp.error) {
+            await conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Erro no servidor'
+            } 
+        }
+
+        await conn.finish()
+        return resp.rows
+
+    },
+
     list: async (client_id:number, injectString:string=''):Promise<monitoramento_i[]|false> => {
             
         const resp = await query(` 
@@ -85,7 +118,7 @@ const monitoramento_repo = {
         
         const conn = await multiTransaction()
 
-        const resp = await query(` 
+        const resp = await conn.query(` 
             SELECT  
                 monitoramento.id,  
                 monitoramento.client_id,  
@@ -104,12 +137,15 @@ const monitoramento_repo = {
             binds:[client_id,id]
         })
 
-        if(resp.error) return {
-            error:true,
-            code:500,
-            message:'Erro no servidor'
-        } 
-
+        if(resp.error) {
+            await conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Erro no servidor'
+            } 
+        }
+        
         const rows = (resp.rows as monitoramento_i[])
 
         if(rows.length == 0) return {
@@ -132,9 +168,12 @@ const monitoramento_repo = {
                     monitoramento_id = ? 
             GROUP BY 
                     local_pub;
-        `)
+        `, {
+            binds:[id]
+        })
         
         if(publicacoesQ.error){
+            await conn.rollBack()
             return {
                 error:true,
                 code:500,
@@ -142,8 +181,28 @@ const monitoramento_repo = {
             }
         }
 
+        const hashtagsQ = await conn.query(`
+            SELECT
+                tag
+            from hashtags
+            where monitoramento_id = ${id}
+        `)
+
+        if(hashtagsQ.error){
+            await conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:publicacoesQ.error_message ? publicacoesQ.error_message : 'Erro ao resgatar hashtags do monitoramento'
+            }
+        }
+
         const publicacao_stats = publicacoesQ.rows as publicacao_stats[]
+
         monitoramento.stats = publicacao_stats
+        monitoramento.hashtags = (hashtagsQ.rows as {tag:string}[]).map(item => item.tag)
+
+        await conn.finish()
 
         return {
             error:false,
@@ -154,41 +213,74 @@ const monitoramento_repo = {
 
     },    
     
-    create: async (client_id:number,titulo:string,descricao:string,ativo:number,creatat:string,pesquisa:string,alvo:string):Promise<create_response> => {
+    create: async (client_id:number,titulo:string,descricao:string,creatat:Date,pesquisa:string,alvo:string, hashtags:string):Promise<create_response> => {
             
-        const resp = await execute(`
-        insert into monitoramento(client_id, titulo, descricao, ativo, creatat, pesquisa, alvo) 
+        const conn = await multiTransaction()
+
+        const getLastPrioridade = await conn.query(`select prioridade from monitoramento where client_id = ${client_id} order by prioridade desc limit 1`)
+
+        if(getLastPrioridade.error){
+            await conn.rollBack()
+            return {
+                code:500,
+                error:true,
+                message:'Erro no servidor',
+                insertId:0
+            }
+        }
+
+        const prioridade = parseInt((getLastPrioridade.rows as any[])[0].prioridade) + 1
+
+        const resp = await conn.execute(`
+        insert into monitoramento(client_id, titulo, descricao, ativo, creatat, pesquisa, alvo, prioridade) 
         VALUES (?,?,?,?,?,?,?)
          `, {
-            binds:[client_id,titulo,descricao,ativo,creatat,pesquisa,alvo]
+            binds:[client_id,titulo,descricao,0,creatat,pesquisa,alvo, prioridade]
         })
 
-        if(resp.error && resp.error_code == 1062) return {
-            code:500,
-            error:true,
-            message:'Registro Duplicado',
-            insertId:0
-        } 
-
-        if(resp.error && resp.error_code == 1366) return {
-            code:400,
-            error:true,
-            message:'Campo enviado mal formatado',
-            insertId:0
-        } 
-
-        if(resp.error) return {
-            code:500,
-            error:true,
-            message:'Erro no servidor',
-            insertId:0
+        if(resp.error){
+            await conn.rollBack()
+            if(resp.error_code == 1366) return {
+                code:400,
+                error:true,
+                message:'Campo enviado mal formatado',
+                insertId:0
+            }; else return {
+                code:500,
+                error:true,
+                message:'Erro no servidor',
+                insertId:0
+            }
         }
+
+        const insertId = (resp.rows as any).insertId
+
+        let exec = 'insert into hashtags(monitoramento_id, tag) values '
+
+        const tags = hashtags.trim().split(' ')
+        for(const tag of tags){
+            exec += `(${insertId}, '${tag}'),`
+        }
+
+        const insertHashtags = await conn.execute(exec.substring(0, exec.length - 1))
+
+        if(insertHashtags.error){
+            await conn.rollBack()
+            return {
+                code:500,
+                error:true,
+                message:'Erro no servidor',
+                insertId:0
+            } 
+        }
+
+        await conn.finish()
 
         return {
             code:200,
             error:false,
             message:'',
-            insertId: (resp.rows as any).insertId
+            insertId: insertId
         }
 
     },    
@@ -292,20 +384,54 @@ const monitoramento_repo = {
 
     },
     
-    update: async (client_id:number,titulo:string,descicao:string,pesquisa:string,alvo:string,id:number):Promise<boolean> => {
+    update: async (client_id:number,titulo:string,descicao:string,pesquisa:string,alvo:string,id:number, hashtags:string):Promise<boolean> => {
         
-        const resp = await execute(`
-        update monitoramento      
-            join client on monitoramento.client_id = client.id 
-        set  monitoramento.titulo = ?,  
-             monitoramento.descricao = ?,  
-             monitoramento.pesquisa = ?,  
-             monitoramento.alvo = ?
-         WHERE client.id = ?  and monitoramento.id = ? `, {
+        const conn = await multiTransaction()
+
+        const resp1 = await conn.execute(`
+            delete from hashtags where monitoramento_id = ?
+        `, {
+            binds:[id]
+        })
+
+        if(resp1.error){
+            await conn.rollBack()
+            return false
+        }
+
+        let exec = 'insert into hashtags(monitoramento_id, tag) values '
+
+        const tags = hashtags.trim().split(' ')
+        for(const tag of tags){
+            exec += `(${id}, '${tag}'),`
+        }
+
+        const insertHashtags = await conn.execute(exec.substring(0, exec.length - 1))
+
+        if(insertHashtags.error){
+            await conn.rollBack()
+            return false
+        }
+
+        const resp = await conn.execute(`
+            update monitoramento      
+                join client on monitoramento.client_id = client.id 
+            set  monitoramento.titulo = ?,  
+                monitoramento.descricao = ?,  
+                monitoramento.pesquisa = ?,  
+                monitoramento.alvo = ?
+            WHERE client.id = ?  and monitoramento.id = ? `, {
             binds:[titulo,descicao,pesquisa,alvo,client_id,id]
         })
 
-        return !resp.error
+        if(resp.error){
+            await conn.rollBack()
+            return false
+        }
+        
+        await conn.finish()
+        return true
+    
     },    
     
     delete: async (client_id:number,id:number):Promise<boolean> => {

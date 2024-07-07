@@ -137,7 +137,8 @@ const fila_monitoramento_repo = {
         `, { binds: [client_id]})
         
         if (changePrioridades.error) {
-            throw new Error('Error resetting prioridades')
+            await conn.rollBack
+            return false
         }
 
         const updates = order_ids.map((id, index) => ({

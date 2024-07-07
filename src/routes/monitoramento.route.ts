@@ -9,6 +9,7 @@ const router = Router()
 
 export default () => {
 
+    router.post('/listPriority', authorization_route('anyUserAuthorized', ['monitoramento@list']), monitoramento_service.listPriority)
     router.post('/list', authorization_route('anyUserAuthorized', ['monitoramento@list']), monitoramento_service.list)
     router.post('/unique', authorization_route('anyUserAuthorized', ['monitoramento@list']), monitoramento_service.unique)
     router.post('/create', authorization_route('anyUserAuthorized', ['monitoramento@create']), monitoramento_service.create)

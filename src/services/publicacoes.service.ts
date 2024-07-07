@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import response from '../util/response'
 import { body, validationResult } from 'express-validator'
 
-import { publicacoes_repo, publicacoes_i } from '../repositories/publicacoes.repo'
+import { publicacoes_repo } from '../repositories/publicacoes.repo'
 
 export default {
 
