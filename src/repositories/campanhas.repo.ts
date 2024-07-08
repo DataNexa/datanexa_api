@@ -3,6 +3,7 @@ import { execute, query, multiTransaction } from "../util/query"
 interface tarefas_i {
     tarefa_id:number,
     tarefa:string,
+    descricao:string,
     status:number,
     createAt:string,
     dataLimite:string
@@ -10,7 +11,6 @@ interface tarefas_i {
 
 interface campanhas_i {
     id:number,
-    client_id:number,
     nome:string,
     descricao:string,
     ativo:number
@@ -38,13 +38,13 @@ const campanhas_repo = {
 
         const resp = await query(` 
             SELECT  
-                campanhas.id,  campanhas.client_id,  campanhas.nome,  campanhas.descricao,  campanhas.ativo,
-                tarefas.id as tarefa_id, tarefas.tarefa, tarefas.status, tarefas.createAt, tarefas.dataLimite
+                campanhas.id, campanhas.nome,  campanhas.descricao,  campanhas.ativo,
+                tarefas.id as tarefa_id, tarefas.tarefa, tarefas.descricao, tarefas.status, tarefas.createAt, tarefas.dataLimite
             from campanhas 
                 left join tarefas on tarefas.campanha_id = campanhas.id 
                 join client  on campanhas.client_id = client.id 
     
-            WHERE  client.id = ? 
+            WHERE  client.id = ? and campanhas.ativo = 1
         ${injectString}`, {
             binds:[client_id]
         })
@@ -56,7 +56,6 @@ const campanhas_repo = {
 
         let campanha_atual:campanhas_i = {
             id:0,
-            client_id:client_id,
             nome:'',
             descricao:'',
             ativo:0,
@@ -70,7 +69,6 @@ const campanhas_repo = {
                 lastId = row.id
                 campanha_atual = {
                     id:row.id,
-                    client_id:client_id,
                     nome:row.nome,
                     descricao:row.descricao,
                     ativo:row.ativo,
@@ -81,6 +79,7 @@ const campanhas_repo = {
                 let tarefa:tarefas_i = {
                     tarefa_id:row.tarefa_id,
                     tarefa:row.tarefa,
+                    descricao:row.descricao,
                     status:row.status,
                     createAt:row.createAt,
                     dataLimite:row.dataLimite
