@@ -80,7 +80,7 @@ const tarefas_repo = {
 
     },    
     
-    create: async (campanha_id:number,tarefa:string,status:number,createAt:string,dataLimite:string,client_id:number):Promise<create_response> => {
+    create: async (campanha_id:number,tarefa:string, descricao:string, status:number,createAt:string,dataLimite:string,client_id:number):Promise<create_response> => {
             
         const conn   = await multiTransaction()
 
@@ -98,11 +98,13 @@ const tarefas_repo = {
             }
         }
 
+        const regDataLimit = dataLimite == '' ? null : new Date(dataLimite)
+
         const resp = await execute(`
-        insert into tarefas(campanha_id, tarefa, status, createAt, dataLimite) 
-        VALUES (?,?,?,?,?)
+        insert into tarefas(campanha_id, tarefa, descricao, status, createAt, dataLimite) 
+        VALUES (?,?,?,?,?,?)
          `, {
-            binds:[campanha_id,tarefa,status,createAt,dataLimite]
+            binds:[campanha_id,tarefa,descricao,status,new Date(createAt),regDataLimit]
         })
 
         if(resp.error)
@@ -140,13 +142,19 @@ const tarefas_repo = {
 
     },    
     
-    update: async (campanha_id:number,tarefa:string,status:number,createAt:string,dataLimite:string,client_id:number,id:number):Promise<boolean> => {
+    update: async (campanha_id:number,tarefa:string, descricao:string, status:number,createAt:string,dataLimite:string,client_id:number,id:number):Promise<boolean> => {
         
-        const resp = await execute(`update tarefas      join campanhas on tarefas.campanha_id = campanhas.id 
-         join client on campanhas.client_id = client.id 
-      set  tarefas.campanha_id = ?,  tarefas.tarefa = ?,  tarefas.status = ?,  tarefas.createAt = ?,  tarefas.dataLimite = ?
-         WHERE  campanhas.id = ? and  client.id = ?  and tarefas.id = ? `, {
-            binds:[campanha_id,tarefa,status,createAt,dataLimite,campanha_id,client_id,id]
+        const regDataLimit = dataLimite == '' ? null : new Date(dataLimite)
+
+        const resp = await execute(`
+            update tarefas      
+                join campanhas on tarefas.campanha_id = campanhas.id 
+                join client on campanhas.client_id = client.id 
+            set  
+                tarefas.campanha_id = ?,  tarefas.tarefa = ?, tarefas.descricao = ?, tarefas.status = ?,  tarefas.createAt = ?,  tarefas.dataLimite = ?
+            WHERE  
+                campanhas.id = ? and  client.id = ?  and tarefas.id = ? `, {
+            binds:[campanha_id,tarefa, descricao, status,new Date(createAt),regDataLimit,campanha_id,client_id,id]
         })
 
         return !resp.error
@@ -155,12 +163,12 @@ const tarefas_repo = {
     delete: async (campanha_id:number,client_id:number,id:number):Promise<boolean> => {
         
         const resp = await execute(`
-         delete tarefas 
-           from tarefas 
+            delete tarefas 
+            from tarefas 
                join campanhas on tarefas.campanha_id = campanhas.id 
-         join client on campanhas.client_id = client.id 
+                join client on campanhas.client_id = client.id 
  
-        WHERE  campanhas.id = ? and  client.id = ?   and tarefas.id = ? `, {
+            WHERE  campanhas.id = ? and  client.id = ?   and tarefas.id = ? `, {
             binds:[campanha_id,client_id,id]
         })
 

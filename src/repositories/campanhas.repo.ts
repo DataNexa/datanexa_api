@@ -98,7 +98,12 @@ const campanhas_repo = {
     unique: async (client_id:number,id:number):Promise<unique_response> =>  {
         
         const resp = await query(` 
-        SELECT  campanhas.id,  campanhas.client_id,  campanhas.nome,  campanhas.descricao,  campanhas.ativo
+        SELECT  
+            campanhas.id,  
+            campanhas.client_id,  
+            campanhas.nome,  
+            campanhas.descricao,  
+            campanhas.ativo
         from campanhas 
              join client on campanhas.client_id = client.id 
  
@@ -182,7 +187,20 @@ const campanhas_repo = {
     
     delete: async (client_id:number,id:number):Promise<boolean> => {
         
-        const resp = await execute(`
+        const conn = await multiTransaction()
+
+        const exe1 = await conn.execute(`
+            delete from tarefas where campanha_id = ?
+        `, {
+            binds:[id]
+        })
+
+        if(exe1.error){
+            await conn.rollBack()
+            return false
+        }
+
+        const resp = await conn.execute(`
          delete campanhas 
            from campanhas 
                join client on campanhas.client_id = client.id 
@@ -191,8 +209,17 @@ const campanhas_repo = {
             binds:[client_id,id]
         })
 
-        return !resp.error
+        if(resp.error){
+            await conn.rollBack()
+            return false
+        }
+
+        await conn.finish()
+        return true
+
     }
+
+    
 }
 
 export { campanhas_repo, campanhas_i }
