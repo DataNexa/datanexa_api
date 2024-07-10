@@ -76,6 +76,7 @@ export default {
         await body('status').isNumeric().run(req)
         await body('createAt').isString().trim().run(req)
         await body('dataLimite').isString().trim().run(req)
+        await body('descricao').isString().trim().run(req)
         await body('client_id').isNumeric().run(req)
 
 
@@ -86,10 +87,12 @@ export default {
             })
         }
 
-        const { campanha_id,tarefa,status,createAt,dataLimite,client_id } = req.body
-        const resp_repo = await tarefas_repo.create(campanha_id,tarefa,status,createAt,dataLimite,client_id)
+        const { campanha_id,tarefa,status,createAt,dataLimite,client_id, descricao } = req.body
+        const resp_repo = await tarefas_repo.create(campanha_id,tarefa, descricao, status,createAt,dataLimite,client_id)
 
         if(resp_repo.error){
+            console.log(resp_repo.code);
+            
             return response(res, {
                 code:resp_repo.code,
                 message: resp_repo.message
@@ -107,6 +110,7 @@ export default {
 
         await body('campanha_id').isNumeric().run(req)
         await body('tarefa').isString().trim().run(req)
+        await body('descricao').isString().trim().run(req)
         await body('status').isNumeric().run(req)
         await body('createAt').isString().trim().run(req)
         await body('dataLimite').isString().trim().run(req)
@@ -121,8 +125,8 @@ export default {
             })
         }
         
-        const { campanha_id,tarefa,status,createAt,dataLimite,client_id,id } = req.body
-        const resp_repo = await tarefas_repo.update(campanha_id,tarefa,status,createAt,dataLimite,client_id,id)
+        const { campanha_id,tarefa,status,createAt,dataLimite,client_id,id, descricao } = req.body
+        const resp_repo = await tarefas_repo.update(campanha_id,tarefa, descricao, status,createAt,dataLimite,client_id,id)
 
         if(!resp_repo){
             return response(res, {
