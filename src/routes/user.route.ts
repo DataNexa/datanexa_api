@@ -7,6 +7,7 @@ import { authorization_route } from '../util/autorization'
 const router = Router()
 
 export default () => {
+    router.post('/list', authorization_route('anyUserAuthorized',['user@list']), user_service.list)
     router.post('/openSession', user_auth.withToken, user_service.openSession)
     router.get('/getDataUser', user_auth.isNotAnonimous, user_service.getDataUser)
     router.post('/create', authorization_route('anyUserAuthorized',['user@create']), user_service.create)

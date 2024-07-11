@@ -11,6 +11,8 @@ interface user_i {
     slug:string|undefined,
     permissions:string[],
     client_id:number|undefined,
+    client_nome:string|undefined,
+    client_slug:string|undefined,
     token_account:string|undefined,
     token_device_id:number|undefined,
     vtoken:number|undefined
@@ -26,6 +28,8 @@ class User {
     private slug:string|undefined
     private permissions:string[] = []
     private client_id:number|undefined
+    private client_nome:string = 'DataNexa'
+    private client_slug:string = 'datanexa'
     private token_account:string|undefined
     private token_device_id:number = 0
     private vtoken:number = 0
@@ -96,6 +100,14 @@ class User {
         this.vtoken = vtoken
     }
 
+    public setClientNome(nome:string) {
+        this.client_nome = nome
+    }
+
+    public setClientSlug(slug:string) {
+        this.client_slug = slug
+    }
+
     public setNome(nome:string) {
         this.nome = nome
     }
@@ -144,6 +156,14 @@ class User {
         return this.client_id
     }
 
+    public getClientNome(){
+        return this.client_nome
+    }
+
+    public getClientSlug(){
+        return this.client_slug
+    }
+
     public getLocale(){
         return this.locale
     }
@@ -156,8 +176,10 @@ class User {
             temp:this.session_temp,
             session:this.session,
             slug:this.slug,
+            client_nome:this.client_nome,
             permissions:this.permissions,
             client_id:this.client_id,
+            client_slug:this.client_slug,
             token_account:this.token_account,
             token_device_id:this.token_device_id,
             vtoken:this.vtoken

@@ -14,7 +14,7 @@ export default (res:Response, dataResponse:response_i = { code:200 }, next?:Next
     
     const user = res.user
     
-    if(user.isNewSession()){
+    if(user && user.isNewSession()){
         dataResponse.session = user.getSession()
     }
     

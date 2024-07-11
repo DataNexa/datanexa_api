@@ -1,4 +1,4 @@
-import express, {Express} from "express"
+import express, {Express, Request, Response} from "express"
 import account_routes from "./account.route"
 import user_routes from "./user.route"
 import tarefas_route from "./tarefas.route"
@@ -9,6 +9,7 @@ import publicacoes_route from "./publicacoes.route"
 import pesquisas_route from "./pesquisas.route"
 import monitoramento_route from "./monitoramento.route"
 import hashtags_route from "./hashtags.route"
+import response from "../util/response"
 
 export default (app:Express) => {
 
@@ -22,6 +23,10 @@ export default (app:Express) => {
     app.use('/pesquisas', pesquisas_route())
     app.use('/monitoramento', monitoramento_route())
     app.use('/hashtags', hashtags_route())
+    app.get('/401', (req:Request, res:Response) => response(res, {
+        code:401,
+        message:'Not Authorized'
+    }))
     return app
     
 }

@@ -23,6 +23,8 @@ interface data_user_full_i extends data_user_i{
     email:string,
     hash_salt:string,
     client_id?:number|null,
+    client_nome?:string|null,
+    client_slug?:string|null,
     permissions:string[]
 }
 

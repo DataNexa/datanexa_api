@@ -18,6 +18,8 @@ const addDataUser = async (dataUser:data_user_full_i, user:User, save:boolean = 
     user.setPermissions(dataUser.permissions)
 
     if(dataUser.client_id) user.setClientId(dataUser.client_id)
+    if(dataUser.client_nome) user.setClientNome(dataUser.client_nome)
+    if(dataUser.client_slug) user.setClientSlug(dataUser.client_slug)
 
     if(save) return await cache.saveDataUser(dataUser)
     return true

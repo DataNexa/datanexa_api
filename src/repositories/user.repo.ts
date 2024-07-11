@@ -6,6 +6,18 @@ import { account_repo } from "./account.repo"
 interface user_basic_response { tipo_usuario: type_user, slug:string, accepted:number, client_slug:string|null, client_nome:string|null }
 interface user_basic_response_literal { tipo_usuario: string, slug:string, accepted:number, client_slug:string|null, client_nome:string|null }
 
+interface user_complete {
+    id:number,
+    nome:string,
+    tipo_usuario: type_user,
+    slug:string,
+    accepted:number,
+    email:string,
+    ativo:number,
+    client_slug:string,
+    client_nome:string
+}
+
 interface user_token_account {
     email:string,
     user_id: number,
@@ -17,11 +29,40 @@ interface user_token_account {
     ativo:number,
     accepted:number,
     client_id?:number|null,
+    client_nome?:string|null,
+    client_slug?:string|null,
     permissions:string[]
 }
 
 const user_repo = {
     
+    listByClient: async (client_id:number):Promise<user_complete[]|false> => {
+
+        const conn = await multiTransaction()
+
+        const resList = await conn.query(`
+            select 
+                user.id, account.nome,
+                user.tipo_usuario, user.slug, user.accepted,
+                account.email, user.ativo,
+                client.slug as client_slug, client.nome as client_nome
+            from user 
+            join account on user.account_id = account.id
+            join user_client on user.id = user_client.user_id 
+            join client on client.id    = user_client.client_id
+                where user_client.client_id = ?
+        `,{
+            binds:[client_id]
+        })
+
+        const list  = (resList.rows as user_complete[])
+    
+        await conn.finish()
+
+        return resList.error ? false : list   
+
+    },
+
     list:async (account_id:number):Promise<user_basic_response_literal[]|false> => {
 
         const conn = await multiTransaction()
@@ -65,6 +106,8 @@ const user_repo = {
             select 
                 user.id as user_id, user.slug, user.ativo, user.accepted, user.tipo_usuario, 
                 client.id as client_id,
+                client.nome as client_nome,
+                client.slug as client_slug,
                 account.nome, account.email,
                 token_account.vtoken, token_device_account.hash_salt
             from 
