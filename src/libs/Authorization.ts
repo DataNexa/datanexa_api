@@ -43,8 +43,9 @@ class Authorization {
 
         const client_id_sended = parseInt(this.req.params.client_id)
         let status = false
+        const typeu = this.res.user.getTypeUser()
         
-        if(type_user.USER_CLIENT == this.res.user.getTypeUser() 
+        if(typeu && type_user.USER_CLIENT == typeu 
             && client_id_sended == this.res.user.getClientId()
         ){
             for(const permission of this.res.user.getPermissions()){
@@ -63,15 +64,16 @@ class Authorization {
     anyAdmins():boolean|void {
 
         const client_id_sended = parseInt(this.req.params.client_id)
+        const typeu = this.res.user.getTypeUser()
 
-        if(type_user.ADMIN == this.res.user.getTypeUser()){
+        if(typeu && type_user.ADMIN == typeu){
             if(this.next) {
                 return this.next()
             }
             return true
         }
 
-        if(type_user.ADMIN_CLIENT == this.res.user.getTypeUser() && client_id_sended == this.res.user.getClientId()){
+        if(typeu && type_user.ADMIN_CLIENT == typeu && client_id_sended == this.res.user.getClientId()){
             if(this.next) {
                 return this.next()
             }
@@ -84,7 +86,10 @@ class Authorization {
     }
 
     onlyBotAuthorized():boolean|void {
-        if(type_user.BOT == this.res.user.getTypeUser()){
+
+        const typeu = this.res.user.getTypeUser()
+
+        if(typeu && type_user.BOT == typeu){
             if(this.next) {
                 return this.next()
             }
@@ -95,22 +100,23 @@ class Authorization {
     anyUserAuthorized():boolean|void{
         
         const client_id_sended = parseInt(this.req.body.client_id)
+        const typeu = this.res.user.getTypeUser()
 
-        if(type_user.ADMIN == this.res.user.getTypeUser()){
+        if(typeu && type_user.ADMIN == typeu){
             if(this.next) {
                 return this.next()
             }
             return true
         }
 
-        if(type_user.ADMIN_CLIENT == this.res.user.getTypeUser() && client_id_sended == this.res.user.getClientId()){
+        if(typeu && type_user.ADMIN_CLIENT == typeu && client_id_sended == this.res.user.getClientId()){
             if(this.next) {
                 return this.next()
             }
             return true
         }
 
-        if(type_user.USER_CLIENT == this.res.user.getTypeUser() && client_id_sended == this.res.user.getClientId()){
+        if(typeu && type_user.USER_CLIENT == typeu && client_id_sended == this.res.user.getClientId()){
             for(const permission of this.res.user.getPermissions()){
                 if(this.permissions.includes(permission)){
                     if(this.next) {

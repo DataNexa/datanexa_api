@@ -9,6 +9,80 @@ import clientRepo from '../repositories/client.repo';
 
 export default {
 
+    unique: async(req:Request, res:Response) => {
+        
+        await body('client_id').isInt({min:1}).run(req)
+        await body('user_id').isInt({min:1}).run(req)
+
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { client_id, user_id } = req.body
+        
+        const user_resp = await user_repo.uniqueByClient(client_id, user_id)
+
+        if(!user_resp.status){
+            return response(res, {
+                code:user_resp.code,
+                message:user_resp.message
+            })
+        }
+
+        response(res, {
+            code:200,
+            body:{
+                user:user_resp.user,
+                permissions:user_resp.permissions
+            }
+        })
+
+    },
+
+    permissions: async (req:Request, res:Response) => {
+        
+        const result = await user_repo.listPermissionsSystem()
+
+        response(res, {
+            code:200,
+            body:result
+        })
+    },
+
+    list: async (req:Request, res:Response) => {
+
+        await body('client_id').isInt({min:1}).run(req)
+
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+        
+        const { client_id } = req.body 
+
+        const list = await user_repo.listByClient(client_id)
+
+        if(!list){
+            return response(res, {
+                code:500,
+                message:'Erro no servidor ao tentar listar usuarios'
+            })
+        }
+
+        response(res, {
+            code:200,
+            body:list
+        })
+
+    },
+
     // gera uma sessão usando a slug do usuário e o token da conta
     openSession: async (req:Request, res:Response) => {
 
@@ -56,7 +130,9 @@ export default {
             email:userReg.email,
             hash_salt:userReg.hash_salt,
             permissions:userReg.permissions,
-            client_id:userReg.client_id
+            client_id:userReg.client_id,
+            client_nome:userReg.client_nome,
+            client_slug:userReg.client_slug
         }
         
         const session = generateSession(obj, userReg.hash_salt)
@@ -82,7 +158,9 @@ export default {
             email:res.user.getEmail(),
             slug:res.user.getSlug(),
             user_type:res.user.getTypeUser(),
-            permissions:res.user.getPermissions()
+            permissions:res.user.getPermissions(),
+            client_nome:res.user.getClientNome(),
+            client_slug:res.user.getClientSlug()
         }
 
         response(res, {
