@@ -7,11 +7,11 @@ const router = Router()
 
 export default () => {
 
-    router.post('/list', authorization_route('anyUserAuthorized', ['monitoramento@list']), hashtags_service.list)
-    router.post('/unique', authorization_route('anyUserAuthorized', ['monitoramento@list']), hashtags_service.unique)
-    router.post('/create', authorization_route('anyUserAuthorized', ['hashtags@create']), hashtags_service.create)
-    router.post('/update', authorization_route('anyUserAuthorized', ['hashtags@update']), hashtags_service.update)
-    router.post('/delete', authorization_route('anyUserAuthorized', ['hashtags@delete']), hashtags_service.delete)
+    router.post('/list',   authorization_route('anyUserAuthorized', ['monitoramento@list']),   hashtags_service.list)
+    router.post('/unique', authorization_route('anyUserAuthorized', ['monitoramento@list']),   hashtags_service.unique)
+    router.post('/create', authorization_route('anyUserAuthorized', ['monitoramento@create']), hashtags_service.create)
+    router.post('/update', authorization_route('anyUserAuthorized', ['monitoramento@update']), hashtags_service.update)
+    router.post('/delete', authorization_route('anyUserAuthorized', ['monitoramento@delete']), hashtags_service.delete)
 
     return router
 }

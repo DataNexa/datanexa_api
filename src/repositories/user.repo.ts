@@ -1,4 +1,4 @@
-import { execute, query, multiTransaction } from "../util/query"
+import { execute, query, multiTransaction, MultiTransaction } from "../util/query"
 import { type_user } from "../libs/User"
 import { result_exec } from "./repositories"
 import { account_repo } from "./account.repo"
@@ -15,7 +15,8 @@ interface user_complete {
     email:string,
     ativo:number,
     client_slug:string,
-    client_nome:string
+    client_nome:string,
+    permissions?:number[]
 }
 
 interface user_token_account {
@@ -34,8 +35,205 @@ interface user_token_account {
     permissions:string[]
 }
 
+interface permission_i {
+    nome:string, 
+    actions:Array<{nome:string, descricao:string, checked:boolean, id:number}>
+}
+
+interface response_unique_i {
+    permissions?:permission_i[],
+    user?:user_complete,
+    status:boolean,
+    code:number,
+    message:string
+}
+
+const listPermissions = async (conn?:MultiTransaction) => {
+
+    const queryPermissions = conn ? await conn.query(`
+        select 
+            service_actions.id as id,
+            services.nome as nome_service,
+            service_actions.nome as nome_action,
+            service_actions.descricao as descricao
+        from 
+            service_actions 
+        join
+            services on service_actions.service_id = services.id
+        order by service_actions.slug
+    `) : await query(`
+        select 
+            service_actions.id as id,
+            services.nome as nome_service,
+            service_actions.nome as nome_action,
+            service_actions.descricao as descricao
+        from 
+            service_actions 
+        join
+            services on service_actions.service_id = services.id
+        order by service_actions.slug
+    `)
+
+    if(queryPermissions.error){
+        return []
+    }
+
+    const permissions = [] as permission_i[]
+    let atualName = ''
+    let atualKey  = -1
+    const rows = queryPermissions.rows as any[]
+
+    for(const row of rows) {
+        if(row.nome_service != atualName){
+            atualKey++
+            atualName = row.nome_service 
+            permissions.push({
+                nome:row.nome_service,
+                actions:[]
+            })
+        }
+        permissions[atualKey].actions.push({
+            nome:row.nome_action,
+            id:row.id,
+            descricao:row.descricao,
+            checked:false
+        })
+    }
+
+    return permissions
+}
+
 const user_repo = {
     
+    listPermissionsSystem: async ():Promise<permission_i[]> => {
+        return await listPermissions()
+    },
+
+    uniqueByClient: async (client_id:number, user_id:number):Promise<response_unique_i> => {
+
+        const conn = await multiTransaction()
+
+        const permissions = await listPermissions(conn)
+
+        const resList = await conn.query(`
+            select 
+                user_permission.service_action_id as action_id,
+                user.id, account.nome,
+                user.tipo_usuario, user.slug, user.accepted,
+                account.email, user.ativo,
+                client.slug as client_slug, client.nome as client_nome
+            from 
+                user_permission
+            join user on user_permission.user_id = user.id
+            join account on user.account_id = account.id
+            join user_client on user.id = user_client.user_id 
+            join client on client.id    = user_client.client_id
+                where user_client.client_id = ?
+                and user_permission.user_id = ?; 
+        `,{
+            binds:[client_id, user_id]
+        })
+
+        if(resList.error){
+            await conn.rollBack()
+            return {
+                status:false,
+                code:500,
+                message:'Erro no servidor'
+            }
+        }
+
+        let user_resp = (resList.rows as any[])
+
+        if(user_resp.length == 0) {
+
+            const oneMore = await conn.query(`
+                select 
+                    user.id, account.nome,
+                    user.tipo_usuario, user.slug, user.accepted,
+                    account.email, user.ativo,
+                    client.slug as client_slug, client.nome as client_nome
+                from user 
+                join account on user.account_id = account.id
+                join user_client on user.id = user_client.user_id 
+                join client on client.id    = user_client.client_id
+                    where user_client.client_id = ?
+                    and user.id = ?; 
+            `, {
+                binds:[client_id, user_id]
+            })
+
+            if(oneMore.error || (oneMore.rows as any[]).length == 0){
+                await conn.rollBack()
+                return {
+                    status:false,
+                    code:404,
+                    message:'Usuário não encontrado'
+                }
+            }
+
+            const data_ini = (oneMore.rows as any)[0]
+
+            const user:user_complete = {
+                id:data_ini.id,
+                nome:data_ini.nome,
+                tipo_usuario:data_ini.tipo_usuario,
+                slug:data_ini.slug,
+                accepted:data_ini.accepted,
+                client_nome:data_ini.client_nome,
+                client_slug:data_ini.client_slug,
+                email:data_ini.email,
+                ativo:data_ini.ativo,
+                permissions:[]
+            }
+
+            await conn.finish()
+
+            return {
+                status:true,
+                code:200,
+                user:user,
+                permissions:permissions,
+                message:''
+            }
+
+        } else {
+
+            const data_ini = user_resp[0]
+
+            const user:user_complete = {
+                id:data_ini.id,
+                nome:data_ini.nome,
+                tipo_usuario:data_ini.tipo_usuario,
+                slug:data_ini.slug,
+                accepted:data_ini.accepted,
+                client_nome:data_ini.client_nome,
+                client_slug:data_ini.client_slug,
+                email:data_ini.email,
+                ativo:data_ini.ativo,
+                permissions:[]
+            }
+
+            await conn.finish()
+
+            for(const u of user_resp){
+                user.permissions?.push(u.action_id)
+            }
+
+            return {
+                status:true,
+                code:200,
+                user:user,
+                permissions:permissions,
+                message:''
+            }
+
+        }
+
+        
+
+    },
+
     listByClient: async (client_id:number):Promise<user_complete[]|false> => {
 
         const conn = await multiTransaction()

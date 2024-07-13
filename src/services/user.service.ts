@@ -9,9 +9,61 @@ import clientRepo from '../repositories/client.repo';
 
 export default {
 
+    unique: async(req:Request, res:Response) => {
+        
+        await body('client_id').isInt({min:1}).run(req)
+        await body('user_id').isInt({min:1}).run(req)
+
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { client_id, user_id } = req.body
+        
+        const user_resp = await user_repo.uniqueByClient(client_id, user_id)
+
+        if(!user_resp.status){
+            return response(res, {
+                code:user_resp.code,
+                message:user_resp.message
+            })
+        }
+
+        response(res, {
+            code:200,
+            body:{
+                user:user_resp.user,
+                permissions:user_resp.permissions
+            }
+        })
+
+    },
+
+    permissions: async (req:Request, res:Response) => {
+        
+        const result = await user_repo.listPermissionsSystem()
+
+        response(res, {
+            code:200,
+            body:result
+        })
+    },
+
     list: async (req:Request, res:Response) => {
 
         await body('client_id').isInt({min:1}).run(req)
+
+        const errors = validationResult(req)
+        if(!errors.isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
         
         const { client_id } = req.body 
 

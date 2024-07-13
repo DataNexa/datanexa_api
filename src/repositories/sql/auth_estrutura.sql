@@ -100,6 +100,7 @@ create table if not exists services (
     nome varchar(255) not null,
     ativo tinyint(1) default 1,
     is_public tinyint(1) default 0,
+    slug varchar(255) not null,
 
     primary key(id)
 ) ENGINE=InnoDB;
