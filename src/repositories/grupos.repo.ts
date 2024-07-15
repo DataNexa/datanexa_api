@@ -5,6 +5,7 @@ interface grupos_i {
     client_id:number,
     titulo:string,
     descricao:string,
+    link:string,
     ativo:number
 }
 
@@ -77,13 +78,13 @@ const grupos_repo = {
 
     },    
     
-    create: async (client_id:number,titulo:string,descricao:string,ativo:number):Promise<create_response> => {
+    create: async (client_id:number,titulo:string,descricao:string,link:string,ativo:number):Promise<create_response> => {
             
         const resp = await execute(`
-        insert into grupos(client_id, titulo, descricao, ativo) 
-        VALUES (?,?,?,?)
+        insert into grupos(client_id, titulo, descricao, link_whatsapp, ativo) 
+        VALUES (?,?,?,?,?)
          `, {
-            binds:[client_id,titulo,descricao,ativo]
+            binds:[client_id,titulo,descricao,link,ativo]
         })
 
         if(resp.error && resp.error_code == 1062) return {
