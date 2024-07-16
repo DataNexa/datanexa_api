@@ -29,7 +29,7 @@ const grupos_repo = {
     list: async (client_id:number, injectString:string=''):Promise<grupos_i[]|false> => {
             
         const resp = await query(` 
-        SELECT  grupos.id,  grupos.client_id,  grupos.titulo,  grupos.descricao,  grupos.ativo
+        SELECT  grupos.id, grupos.link_whatsapp as link, grupos.client_id,  grupos.titulo,  grupos.descricao,  grupos.ativo
         from grupos 
              join client on grupos.client_id = client.id 
  
@@ -46,7 +46,7 @@ const grupos_repo = {
     unique: async (client_id:number,id:number):Promise<unique_response> =>  {
         
         const resp = await query(` 
-        SELECT  grupos.id,  grupos.client_id,  grupos.titulo,  grupos.descricao,  grupos.ativo
+        SELECT  grupos.id,  grupos.link_whatsapp as link, grupos.client_id,  grupos.titulo,  grupos.descricao,  grupos.ativo
         from grupos 
              join client on grupos.client_id = client.id 
  

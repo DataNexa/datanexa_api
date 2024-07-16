@@ -89,6 +89,7 @@ const campanhas_repo = {
             
         }
 
+        if(campanha_atual.id > 0)
         campanhas.push(campanha_atual)
 
         return campanhas
