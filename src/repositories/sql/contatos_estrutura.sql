@@ -5,6 +5,7 @@ create table if not exists grupos (
     client_id bigint(255) not null,
     titulo varchar(255) not null,
     descricao varchar(255),
+    link_whatsapp varchar(255),
     ativo tinyint(1) not null default(1),
 
     foreign key(client_id)

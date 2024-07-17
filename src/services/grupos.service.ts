@@ -6,8 +6,6 @@ import { grupos_repo, grupos_i } from '../repositories/grupos.repo'
 
 export default {
 
-    
-
     list: async (req:Request, res:Response) => {
 
         await body('client_id').isNumeric().run(req)
@@ -72,6 +70,7 @@ export default {
         await body('client_id').isNumeric().run(req)
         await body('titulo').isString().trim().run(req)
         await body('descricao').isString().trim().run(req)
+        await body('link').isString().trim().run(req)
         await body('ativo').isNumeric().run(req)
 
 
@@ -82,8 +81,8 @@ export default {
             })
         }
 
-        const { client_id,titulo,descricao,ativo } = req.body
-        const resp_repo = await grupos_repo.create(client_id,titulo,descricao,ativo)
+        const { client_id, titulo, descricao, ativo, link } = req.body
+        const resp_repo = await grupos_repo.create(client_id,titulo,descricao,link,ativo)
 
         if(resp_repo.error){
             return response(res, {
@@ -104,6 +103,7 @@ export default {
         await body('client_id').isNumeric().run(req)
         await body('titulo').isString().trim().run(req)
         await body('descricao').isString().trim().run(req)
+        await body('link').isString().trim().run(req)
         await body('ativo').isNumeric().run(req)
         await body('id').isNumeric().run(req)
 
@@ -115,8 +115,8 @@ export default {
             })
         }
         
-        const { client_id,titulo,descricao,ativo,id } = req.body
-        const resp_repo = await grupos_repo.update(client_id,titulo,descricao,ativo,id)
+        const { client_id,titulo,descricao,ativo,id, link } = req.body
+        const resp_repo = await grupos_repo.update(client_id,titulo,descricao,ativo,id, link)
 
         if(!resp_repo){
             return response(res, {

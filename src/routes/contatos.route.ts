@@ -7,8 +7,8 @@ const router = Router()
 
 export default () => {
 
-    router.post('/list', authorization_route('anyUserAuthorized', ['grupos@list']), contatos_service.list)
-    router.post('/unique', authorization_route('anyUserAuthorized', ['grupos@list']), contatos_service.unique)
+    router.post('/list',   authorization_route('anyUserAuthorized', ['contatos@list']),   contatos_service.list  )
+    router.post('/unique', authorization_route('anyUserAuthorized', ['contatos@list']),   contatos_service.unique)
     router.post('/create', authorization_route('anyUserAuthorized', ['contatos@create']), contatos_service.create)
     router.post('/update', authorization_route('anyUserAuthorized', ['contatos@update']), contatos_service.update)
     router.post('/delete', authorization_route('anyUserAuthorized', ['contatos@delete']), contatos_service.delete)
