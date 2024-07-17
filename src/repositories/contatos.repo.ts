@@ -85,7 +85,6 @@ const contatos_repo = {
     
     create: async (grupo_id:number,apelido:string,nome:string,whatsapp:string,email:string,instagram:string,twitter:string,facebook:string,client_id:number):Promise<create_response> => {
         
-        
         const resp = await execute(`
         insert into contatos(grupo_id, apelido, nome, whatsapp, email, instagram, twitter, facebook) 
         VALUES (?,?,?,?,?,?,?,?)

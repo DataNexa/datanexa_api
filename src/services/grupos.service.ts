@@ -103,6 +103,7 @@ export default {
         await body('client_id').isNumeric().run(req)
         await body('titulo').isString().trim().run(req)
         await body('descricao').isString().trim().run(req)
+        await body('link').isString().trim().run(req)
         await body('ativo').isNumeric().run(req)
         await body('id').isNumeric().run(req)
 
@@ -114,8 +115,8 @@ export default {
             })
         }
         
-        const { client_id,titulo,descricao,ativo,id } = req.body
-        const resp_repo = await grupos_repo.update(client_id,titulo,descricao,ativo,id)
+        const { client_id,titulo,descricao,ativo,id, link } = req.body
+        const resp_repo = await grupos_repo.update(client_id,titulo,descricao,ativo,id, link)
 
         if(!resp_repo){
             return response(res, {

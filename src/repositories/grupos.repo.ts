@@ -32,8 +32,8 @@ const grupos_repo = {
         SELECT  grupos.id, grupos.link_whatsapp as link, grupos.client_id,  grupos.titulo,  grupos.descricao,  grupos.ativo
         from grupos 
              join client on grupos.client_id = client.id 
- 
-         WHERE  client.id = ? 
+        
+         WHERE  client.id = ? and grupos.ativo = 1
         ${injectString}`, {
             binds:[client_id]
         })
@@ -117,12 +117,12 @@ const grupos_repo = {
 
     },    
     
-    update: async (client_id:number,titulo:string,descricao:string,ativo:number,id:number):Promise<boolean> => {
+    update: async (client_id:number,titulo:string,descricao:string,ativo:number,id:number, link:string):Promise<boolean> => {
         
         const resp = await execute(`update grupos      join client on grupos.client_id = client.id 
-      set  grupos.client_id = ?,  grupos.titulo = ?,  grupos.descricao = ?,  grupos.ativo = ?
+      set  grupos.client_id = ?,  grupos.titulo = ?, grupos.link_whatsapp = ?,  grupos.descricao = ?,  grupos.ativo = ?
          WHERE  client.id = ?  and grupos.id = ? `, {
-            binds:[client_id,titulo,descricao,ativo,client_id,id]
+            binds:[client_id,titulo,link,descricao,ativo,client_id,id]
         })
 
         return !resp.error
@@ -131,11 +131,10 @@ const grupos_repo = {
     delete: async (client_id:number,id:number):Promise<boolean> => {
         
         const resp = await execute(`
-         delete grupos 
-           from grupos 
-               join client on grupos.client_id = client.id 
- 
-        WHERE  client.id = ?   and grupos.id = ? `, {
+        update grupos      
+        join client on grupos.client_id = client.id 
+        set  grupos.ativo = 2
+           WHERE  client.id = ?  and grupos.id = ? `, {
             binds:[client_id,id]
         })
 
