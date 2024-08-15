@@ -51,7 +51,8 @@ interface data_session_i {
 
 interface data_bot_i {
     slug:string,
-    locale:string
+    locale:string,
+    vtoken:number
 }
 
 interface response_data_i { header:header_i, user?:data_user_i, token?:data_token_i, account?:data_account_i }
@@ -70,7 +71,7 @@ const generateSessionTemp = (data:data_account_i) => {
 }
 
 const generateBotToken = (data:data_bot_i) => {
-    return JWT.generate({alg:'sha512', type:type_session.BOT, expire_in:Date.now() + 1000 * 60 * 30}, data)
+    return JWT.generate({alg:'sha512', type:type_session.BOT, expire_in:Date.now() + 1000 * 60 * 60 * 24 * 365}, data)
 }
 
 const getDataSession = (session:string):data_session_i => {

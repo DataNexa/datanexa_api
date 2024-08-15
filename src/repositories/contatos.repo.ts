@@ -134,7 +134,7 @@ const contatos_repo = {
         return !resp.error
     },    
     
-    delete: async (grupo_id:number,client_id:number,id:number):Promise<boolean> => {
+    delete: async (grupo_id:number, client_id:number, id:number):Promise<boolean> => {
         
         const resp = await execute(`
          delete contatos 

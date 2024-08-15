@@ -391,6 +391,49 @@ const account_repo = {
         }
     },
 
+    async registerSessionTempWithPass(account_id:number, session_value:string, senha:string):Promise<response_data>{
+        
+        const conn = await multiTransaction()
+
+        const resQuery = await conn.query('select senha from account where id = ?', {
+            binds:[account_id]
+        })
+
+        if(resQuery.error){
+            await conn.rollBack()
+            return {
+                error:resQuery.error
+            }
+        }
+        
+        const acc = (resQuery.rows as any[])[0]
+
+        if(!await JWT.comparePassword(senha, acc.senha)){
+            await conn.rollBack()
+            return {
+                error:false
+            }
+        }
+
+        const execRespSess = await conn.execute(`
+            insert into session_temp(account_id, session_value, expire_in, used)
+            values (?,?,?,?)
+        `, {
+            binds: [account_id, session_value, getDateSessionTemp(), 0]
+        })
+
+        if(execRespSess.error){
+            await conn.rollBack()
+        } else {
+            await conn.finish()
+        }
+
+        return {
+            error:execRespSess.error
+        }
+
+    },
+
     async registerNewRecoverCode(account_id:number, codigo:string, expire_in:Date):Promise<response_data>{
         
         const execResp = await execute(`
@@ -521,9 +564,9 @@ const account_repo = {
             }
         }
 
-        const acc = (selAccout.rows as any[])[0]
+        const acc = (selAccout.rows as any[])
 
-        if(acc.length == 0 || !await JWT.comparePassword(senha, acc.senha)){
+        if(acc.length == 0 || !await JWT.comparePassword(senha, acc[0].senha)){
             await conn.rollBack()
             return {
                 token:'',
@@ -533,7 +576,7 @@ const account_repo = {
             }
         }
 
-        if(!acc.confirmed){
+        if(!acc[0].confirmed){
             await conn.rollBack()
             return {
                 token:'',
@@ -543,11 +586,11 @@ const account_repo = {
             }
         }
 
-        const refresh_token = JWT.newToken(`${acc.id}refresh_token${Date.now()}`, 'sha512')
-        const hash_salt     = JWT.newToken(`${acc.id}hash_salt${Date.now()}`)
+        const refresh_token = JWT.newToken(`${acc[0].id}refresh_token${Date.now()}`, 'sha512')
+        const hash_salt     = JWT.newToken(`${acc[0].id}hash_salt${Date.now()}`)
 
         const response_register = await account_repo.registerToken(
-            acc.token_account_id,
+            acc[0].token_account_id,
             hash_salt,
             refresh_token,
             user_agent,
@@ -567,9 +610,9 @@ const account_repo = {
         const token_device_account_id = response_register.insertId
 
         const token = generateToken({
-            account_id:acc.id,
+            account_id:acc[0].id,
             token_device_id:token_device_account_id,
-            vtoken:acc.vtoken
+            vtoken:acc[0].vtoken
         })
 
         await conn.finish()
@@ -638,9 +681,9 @@ const account_repo = {
 
     },
 
-    async update(data:{nome?:string, email?:string, senha?:string }, account_id:number):Promise<response_data>{
+    async update(data:{nome?:string, senha?:string }, account_id:number):Promise<response_data>{
 
-        if(!data.nome && !data.email && !data.senha){
+        if(!data.nome && !data.senha){
             return {
                 error_code:400,
                 error:true
@@ -653,11 +696,6 @@ const account_repo = {
         if(data.nome){
             sqlinsert += " nome = ?, "
             binds.push(data.nome)
-        }
-
-        if(data.email) {
-            sqlinsert += " email = ?, "
-            binds.push(data.email)
         }
 
         if(data.senha) {

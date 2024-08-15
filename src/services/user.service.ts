@@ -5,7 +5,7 @@ import { generateSession } from '../libs/session_manager';
 import { user_repo } from '../repositories/user.repo';
 import cache from '../libs/cache';
 import { type_user } from '../libs/User';
-import clientRepo from '../repositories/client.repo';
+import { client_repo } from '../repositories/client.repo';
 
 export default {
 
@@ -182,10 +182,11 @@ export default {
         const user = res.user
         
         await body('tipo_usuario').isInt({min:1, max:4}).run(req)
-
-        if(user.getTypeUser() == type_user.USER_CLIENT || 
-            user.getTypeUser() == type_user.ADMIN_CLIENT || 
-            req.body.tipo_usuario == type_user.USER_CLIENT ||
+       
+        if( user.getTypeUser()    == type_user.ADMIN        ||
+            user.getTypeUser()    == type_user.USER_CLIENT  || 
+            user.getTypeUser()    == type_user.ADMIN_CLIENT || 
+            req.body.tipo_usuario == type_user.USER_CLIENT  ||
             req.body.tipo_usuario == type_user.ADMIN_CLIENT )
             await body('client_id').isInt().run(req)
         
@@ -194,10 +195,11 @@ export default {
         await body('email').isEmail().run(req)
         
         const errors = validationResult(req)
+        
         if(!errors.isEmpty()){
             return response(res, {
                 code: 400,
-                message:"Erro ao enviar dados"
+                message:"Erro no envio dados"
             })
         }
 
@@ -207,7 +209,7 @@ export default {
             // se o usuário for do tipo ADMIN_CLIENT ele não poderá criar ADMIN ou GHOST user
             ( user.getTypeUser() == type_user.ADMIN_CLIENT  && (b.tipo_usuario == 1 || b.tipo_usuario == 2))  ||
             // se o usuário for do tipo USER_CLIENT (com permissão de usuários) ele só poderá criar outros USER_CLIENT
-            (user.getTypeUser() == type_user.USER_CLIENT && b.tipo_usuario != type_user.USER_CLIENT)
+            ( user.getTypeUser() == type_user.USER_CLIENT && b.tipo_usuario != type_user.USER_CLIENT)
         ) return response(res, {
             code:401,
             message:'Você não tem permissão para criar este tipo de usuário'
@@ -217,7 +219,7 @@ export default {
         let slug  = b.email.split('@')[0]+"@"
         let assig =  b.tipo_usuario == type_user.ADMIN ? 'admin' : 'ghost'
         if(b.client_id) {
-            let cli_slug = (await clientRepo.getSlugById(b.client_id))
+            let cli_slug = (await client_repo.getSlugById(b.client_id))
             if(cli_slug) assig = cli_slug.slug
         }
         slug += assig

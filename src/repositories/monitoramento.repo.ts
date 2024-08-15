@@ -50,6 +50,7 @@ const monitoramento_repo = {
             SELECT  
                 monitoramento.id,  
                 monitoramento.titulo,  
+                monitoramento.alvo,
                 monitoramento.descricao,  
                 monitoramento.prioridade
             from monitoramento 
@@ -224,18 +225,22 @@ const monitoramento_repo = {
             return {
                 code:500,
                 error:true,
-                message:'Erro no servidor',
+                message:'Erro no servidor 1',
                 insertId:0
             }
         }
 
-        const prioridade = parseInt((getLastPrioridade.rows as any[])[0].prioridade) + 1
+        const rowsPrioridade = getLastPrioridade.rows as any[]
+
+        const prioridade = 
+            rowsPrioridade.length == 0 ? 1 
+            : parseInt(rowsPrioridade[0].prioridade) + 1
 
         const resp = await conn.execute(`
-        insert into monitoramento(client_id, titulo, descricao, ativo, creatat, pesquisa, alvo, prioridade) 
-        VALUES (?,?,?,?,?,?,?)
+        insert into monitoramento(client_id, titulo, descricao, ativo, creatat, pesquisa, alvo, prioridade, repetir) 
+        VALUES (?,?,?,?,?,?,?,?,1)
          `, {
-            binds:[client_id,titulo,descricao,0,creatat,pesquisa,alvo, prioridade]
+            binds:[client_id,titulo,descricao,1,creatat,pesquisa,alvo,prioridade]
         })
 
         if(resp.error){
@@ -248,7 +253,7 @@ const monitoramento_repo = {
             }; else return {
                 code:500,
                 error:true,
-                message:'Erro no servidor',
+                message:'Erro no servidor - '+resp.error_code,
                 insertId:0
             }
         }

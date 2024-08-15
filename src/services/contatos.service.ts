@@ -6,8 +6,6 @@ import { contatos_repo, contatos_i } from '../repositories/contatos.repo'
 
 export default {
 
-    
-
     list: async (req:Request, res:Response) => {
 
         await body('grupo_id').isNumeric().run(req)

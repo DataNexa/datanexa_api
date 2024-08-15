@@ -1,4 +1,4 @@
-import { User } from "./User";
+import { User, type_user } from "./User";
 import { Request, Response, NextFunction } from "express"
 
 import { type_session, data_bot_i, data_account_i, data_token_i, data_user_i, header_i, generateSession, verifySession, getDataSession, generateToken, data_user_full_i, generateBotToken } from "./session_manager";
@@ -27,9 +27,11 @@ const addDataUser = async (dataUser:data_user_full_i, user:User, save:boolean = 
 }
 
 const generateBotData = (user:User, dataBot:data_bot_i) => {
+    
     user.setSlug(dataBot.slug)
     user.setLocale(dataBot.locale)
-
+    user.setTypeUser(type_user.BOT)
+    
     // TODO: checagem para ver se o BOT está cadastrado no banco de dados
 
     return true
@@ -146,7 +148,7 @@ export default async (req:Request, res:Response, next:NextFunction) => {
         }
 
         const dataUser = verifySession(sess)
-        
+
         if(dataUser && dataUser.account && dataUser.header.type == type_session.SESSION_TEMP){
             
             user.setSessionTemp(sess)
@@ -171,11 +173,11 @@ export default async (req:Request, res:Response, next:NextFunction) => {
             }
             
         } else
-        if(dataUser && dataUser.token && dataUser.header.type == type_session.BOT){
-            
+        if(dataUser && dataUser.header.type == type_session.BOT){
+    
             user.setTokenAccount(sess)
             let status = generateBotData(user, (dataSess.user as data_bot_i))
-            
+           
             if(!status){
                 return response(res,{
                     code: 401
