@@ -252,15 +252,11 @@ export default {
     edit:async (req:Request, res:Response, next:NextFunction) => {
 
         res.dataBody = ""
+
         if(req.body.senha){
             res.dataBody += " :senha: "
             await body('senha').isString().isLength({min:6}).trim().run(req)
             req.body.senha = await JWT.cryptPassword(req.body.senha)
-        }
-
-        if(req.body.email){
-            res.dataBody += " :email: "
-            await body('email').isEmail().trim().run(req)
         }
 
         if(req.body.nome){
@@ -369,6 +365,40 @@ export default {
             }
         })
         
+    },
+
+    createSessionTemp: async (req:Request, res:Response) => {
+
+        await body('senha').isString().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const session_temp = generateSessionTemp({
+            nome:res.user.getNome(),
+            account_id:res.user.getAccountId()
+        })
+
+        const resultSess = await account_repo.registerSessionTempWithPass(res.user.getAccountId(), session_temp, req.body.senha)
+        
+        if(resultSess.error){
+            return response(res, {
+                code:404,
+                message:'A senha está incorreta'
+            })
+        }
+
+        response(res, {
+            code:200,
+            body:{
+                session_temp:session_temp
+            }
+        }) 
+
     },
 
     // lista usuários da conta

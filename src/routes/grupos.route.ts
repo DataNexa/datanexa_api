@@ -9,9 +9,9 @@ export default () => {
 
     router.post('/list',   authorization_route('anyUserAuthorized', ['contatos@list']),   grupos_service.list  )
     router.post('/unique', authorization_route('anyUserAuthorized', ['contatos@list']),   grupos_service.unique)
-    router.post('/create', authorization_route('anyUserAuthorized', ['grupos@create']), grupos_service.create)
-    router.post('/update', authorization_route('anyUserAuthorized', ['grupos@update']), grupos_service.update)
-    router.post('/delete', authorization_route('anyUserAuthorized', ['grupos@delete']), grupos_service.delete)
+    router.post('/create', authorization_route('anyUserAuthorized', ['contatos@create_group']), grupos_service.create)
+    router.post('/update', authorization_route('anyUserAuthorized', ['contatos@update_group']), grupos_service.update)
+    router.post('/delete', authorization_route('anyUserAuthorized', ['contatos@delete_group']), grupos_service.delete)
 
     return router
 }

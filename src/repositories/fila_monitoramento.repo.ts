@@ -7,10 +7,83 @@ interface fila_monitoramento_i {
     titulo:string
 }
 
+interface fila_monitoramento_plus_i extends fila_monitoramento_i {
+    client_id:number,
+    task_id:number
+}
+
+type client_t = {
+    nome:string,
+    slug:string,
+    id:number,
+    total_monitoramentos:number
+}
+
 const fila_monitoramento_repo = {
-        
     
-    list: async (client_id:number, injectString:string=''):Promise<fila_monitoramento_i[]|false> => {
+
+    info: async ():Promise<client_t[]|false> => {
+
+        const resp = await query(`
+            select 
+                client.id,
+                client.nome, 
+                client.slug,
+                COUNT(monitoramento.client_id) as total_monitoramentos
+            from 
+                client
+            join
+                monitoramento on client.id = monitoramento.client_id
+            where 
+                client.ativo = 1 and monitoramento.ativo = 1
+            group by 
+                client.id;
+        `)
+
+        return !resp.error ? resp.rows as client_t[] : false
+
+    },
+
+
+    listUniqueMonitoramentoPerClient: async ():Promise<fila_monitoramento_plus_i[]> => {
+
+        const resp = await query(`
+            SELECT 
+                monitoramento_filas.client_id,
+                monitoramento.id AS monitoramento_id,
+                monitoramento.prioridade,
+                monitoramento_tasks.task_status,
+                monitoramento_tasks.id AS task_id,
+                monitoramento.titulo
+            FROM 
+                monitoramento_filas
+                JOIN monitoramento_tasks ON monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
+                JOIN monitoramento ON monitoramento.id = monitoramento_tasks.monitoramento_id
+            WHERE 
+                monitoramento_tasks.task_status = 1
+                AND monitoramento_tasks.id = (
+                    SELECT MIN(mt2.id)
+                    FROM monitoramento_tasks mt2
+                    JOIN monitoramento_filas mf2 ON mt2.monitoramento_fila_id = mf2.id
+                    WHERE 
+                        mf2.client_id = monitoramento_filas.client_id
+                        AND mt2.task_status = 1
+                )
+            ORDER BY 
+                monitoramento_filas.id DESC, 
+                monitoramento.prioridade ASC;
+        `)
+
+        if(resp.error) {
+            return [] 
+        }
+
+        return resp.rows as fila_monitoramento_plus_i[]
+
+    },
+
+    
+    list: async (client_id:number, injectString:string=''):Promise<fila_monitoramento_plus_i[]|false> => {
         
         const conn = await multiTransaction()
 
@@ -18,8 +91,10 @@ const fila_monitoramento_repo = {
             SELECT  
                     monitoramento.id as monitoramento_id,
                     monitoramento.prioridade,
+                    monitoramento_tasks.id as task_id,
                     monitoramento_tasks.task_status,
-                    monitoramento.titulo
+                    monitoramento.titulo,
+                    monitoramento.alvo
             from 
                 monitoramento_filas
                 join monitoramento_tasks on monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
@@ -36,7 +111,7 @@ const fila_monitoramento_repo = {
             return false 
         }
 
-        const lista_monitoramento = resp.rows as fila_monitoramento_i[]
+        const lista_monitoramento = resp.rows as fila_monitoramento_plus_i[]
 
         if(lista_monitoramento.length > 0){
             for(const mon of lista_monitoramento){
@@ -51,6 +126,7 @@ const fila_monitoramento_repo = {
             select 
                     monitoramento.id as monitoramento_id,
                     monitoramento.titulo,
+                    monitoramento.alvo,
                     monitoramento.prioridade,
                     1 as task_status
             from 
@@ -68,6 +144,9 @@ const fila_monitoramento_repo = {
                             where monitoramento_tasks.monitoramento_id = monitoramento.id
                         )
                 )
+            group by
+                monitoramento.id 
+            order by monitoramento.prioridade ASC;
         `)
 
         if(getAllMonitoramentosAtivos.error){
@@ -90,6 +169,7 @@ const fila_monitoramento_repo = {
         const fila_id = (addFila.rows as any).insertId
 
         let q  = 'insert into monitoramento_tasks (monitoramento_id, monitoramento_fila_id, task_status ) values '
+        let t  = monitoramentosAtivos.length
 
         for(const monitoramento_ativo of monitoramentosAtivos){
             q += `( ${monitoramento_ativo.monitoramento_id}, ${fila_id}, 1 ),`
@@ -105,7 +185,16 @@ const fila_monitoramento_repo = {
 
         await conn.finish()
 
-        return monitoramentosAtivos
+        let insertId = parseInt((insertRes.rows as any).insertId)
+       
+        let res = monitoramentosAtivos as fila_monitoramento_plus_i[]
+
+        for (let i = 0; i < t; i++) {
+            res[i].task_id = insertId
+            insertId++
+        }
+        
+        return res
     
     },
 

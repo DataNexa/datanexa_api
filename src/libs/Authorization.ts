@@ -87,17 +87,20 @@ class Authorization {
 
     onlyBotAuthorized():boolean|void {
 
-        const typeu = this.res.user.getTypeUser()
+        if(!this.res.user) return false
 
+        const typeu = this.res.user.getTypeUser()
+        
         if(typeu && type_user.BOT == typeu){
-            if(this.next) {
-                return this.next()
-            }
             return true
         }
+        
+        return false
     }
 
     anyUserAuthorized():boolean|void{
+
+        if(!this.res.user) return response(this.res, {code:401, message:this.unauthorizedMessage})
         
         const client_id_sended = parseInt(this.req.body.client_id)
         const typeu = this.res.user.getTypeUser()

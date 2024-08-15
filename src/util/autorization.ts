@@ -10,7 +10,7 @@ const authorization = (req:Request, res:Response, next?:NextFunction):Authorizat
 
 const authorization_route = (auth:string, permissions:string[] = []) => {
     
-    if(['onlyAdmin', 'onlyClientAdmin', 'onlyUserClient', 'anyAdmins', 'anyUserAuthorized'].includes(auth))
+    if(['onlyAdmin', 'onlyClientAdmin', 'onlyUserClient', 'anyAdmins', 'anyUserAuthorized', 'botAndUserAuthorized'].includes(auth))
         return (req:Request, res:Response, next:NextFunction) => {
             const auth_obj = authorization(req, res, next)
             auth_obj.setPermissions(permissions)
@@ -37,7 +37,14 @@ const authorization_route = (auth:string, permissions:string[] = []) => {
 const onlyBot = () => {
     return (req:Request, res:Response, next:NextFunction) => {
         const auth_obj = authorization(req, res, next)
-        auth_obj.onlyBotAuthorized()
+        const stats = auth_obj.onlyBotAuthorized()
+        if(stats){
+            return next()
+        } else {
+            response(res, {
+                code:401
+            })   
+        } 
     }
 }
 
@@ -48,7 +55,7 @@ const botAndUserAuthorized = (permissions:string[] = []) => {
         if(auth_obj.anyUserAuthorized() || auth_obj.onlyBotAuthorized()){
             return next()
         } 
-        response(res, {
+        return response(res, {
             code:401
         })
     }   

@@ -20,7 +20,9 @@ export default () => {
     router.post('/ativar', authorization_route('anyUserAuthorized', ['monitoramento@update']), monitoramento_service.ativar)
     router.post('/repetir', authorization_route('anyUserAuthorized', ['monitoramento@update']), monitoramento_service.repetir)
 
-    router.post('/alterarStatusTask', onlyBot, fila_monitoramento_service.alterarStatusTask)
+    router.post('/alterarStatusTask', onlyBot(), fila_monitoramento_service.alterarStatusTask)
+    router.get('/listUniquePerClient', onlyBot(), fila_monitoramento_service.listUniquePerClient)
+    router.get('/info', onlyBot(), fila_monitoramento_service.info)
 
     return router
 }

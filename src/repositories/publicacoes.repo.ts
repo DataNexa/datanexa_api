@@ -29,6 +29,21 @@ interface unique_response {
 }
 
 const publicacoes_repo = {
+
+    add: async (monitoramento_id:number, titulo:string, texto:string, avaliacao:number, link:string, local_pub:string, data_pub:string) => {
+
+        const resp = await execute(`
+            insert into 
+                publicacoes 
+                   (monitoramento_id, titulo, texto, avaliacao, link, local_pub, data_pub, curtidas, compatilhamento, visualizacoes )
+            values (?,?,?,?,?,?,?,0,0,0)
+        `, {
+            binds:[ monitoramento_id, titulo, texto, avaliacao, link, local_pub, data_pub ]
+        })
+
+        return resp.error
+
+    },
         
     
     list: async (monitoramento_id:number,client_id:number, injectString:string=''):Promise<publicacoes_i[]|false> => {
@@ -63,13 +78,15 @@ const publicacoes_repo = {
     unique: async (monitoramento_id:number,client_id:number,id:number):Promise<unique_response> =>  {
         
         const resp = await query(` 
-        SELECT  publicacoes.id,  publicacoes.monitoramento_id,  publicacoes.titulo,  publicacoes.texto,  publicacoes.avaliacao,  publicacoes.link,  publicacoes.local_pub,  publicacoes.curtidas,  publicacoes.compartilhamento,  publicacoes.visualizacoes,  publicacoes.data_pub
-        from publicacoes 
-             join monitoramento on publicacoes.monitoramento_id = monitoramento.id 
-         join client on monitoramento.client_id = client.id 
- 
-         WHERE  monitoramento.id = ? and  client.id = ? 
-            and publicacoes.id = ? `, {
+            SELECT   publicacoes.id,  publicacoes.monitoramento_id,  publicacoes.titulo,  publicacoes.texto,  publicacoes.avaliacao,  publicacoes.link,  publicacoes.local_pub,  publicacoes.curtidas,  publicacoes.compartilhamento,  publicacoes.visualizacoes,  publicacoes.data_pub
+                from publicacoes 
+                join monitoramento on publicacoes.monitoramento_id = monitoramento.id 
+                join client        on monitoramento.client_id = client.id 
+    
+              WHERE monitoramento.id = ? 
+                and client.id        = ? 
+                and publicacoes.id   = ? 
+        `, {
             binds:[monitoramento_id,client_id,id]
         })
 

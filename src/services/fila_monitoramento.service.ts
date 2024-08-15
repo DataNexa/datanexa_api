@@ -2,9 +2,38 @@ import { Request, Response, NextFunction } from 'express'
 import response from '../util/response'
 import { body, validationResult } from 'express-validator'
 
-import { fila_monitoramento_repo, fila_monitoramento_i } from '../repositories/fila_monitoramento.repo'
+import { fila_monitoramento_repo } from '../repositories/fila_monitoramento.repo'
 
 export default {
+
+    info: async (req:Request, res:Response) => {
+
+        const resp_repo = await fila_monitoramento_repo.info()
+        
+        if(!resp_repo){
+            response(res, {
+                code: 500,
+                message: 'Erro ao tentar listar os clientes'
+            })
+        } else {
+            response(res, {
+                body:resp_repo,
+                code:200
+            })
+        }
+
+    },
+
+    listUniquePerClient: async (req:Request, res:Response) => {
+
+        const resp_repo = await fila_monitoramento_repo.listUniqueMonitoramentoPerClient()
+
+        response(res, { 
+            body:resp_repo,
+            code:200
+        })
+
+    },
 
     list: async (req:Request, res:Response) => {
 
