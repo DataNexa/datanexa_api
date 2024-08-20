@@ -3,6 +3,7 @@ import { User } from "../libs/User";
 import UserFactory from "../libs/UserFactory";
 import routes from "../routes/routes";
 import cors from 'cors';
+import create_master_user from "./auto";
 
 declare global{
     namespace Express {
@@ -13,7 +14,12 @@ declare global{
     }
 }
 
-export default ():Express => {
+export default async ():Promise<Express> => {
+
+    const created = await create_master_user()
+    if(!created){
+        throw "Não foi possivel criar o usuáŕio master"
+    }
 
     const app:Express = express()
     const cors_options: cors.CorsOptions = {

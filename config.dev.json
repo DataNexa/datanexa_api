@@ -7,5 +7,9 @@
         "pass":"@jkII4#mlkA3$D",
         "port":3306,
         "name":"datanexa"
+    },
+    "master":{
+        "email":"test@email.com",
+        "senha":"senhatest@123"
     }
 }

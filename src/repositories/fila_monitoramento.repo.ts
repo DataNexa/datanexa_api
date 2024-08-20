@@ -4,7 +4,8 @@ interface fila_monitoramento_i {
     prioridade:number,
     monitoramento_id:number,
     task_status:number,
-    titulo:string
+    titulo:string,
+    pesquisa:string
 }
 
 interface fila_monitoramento_plus_i extends fila_monitoramento_i {
@@ -54,7 +55,8 @@ const fila_monitoramento_repo = {
                 monitoramento.prioridade,
                 monitoramento_tasks.task_status,
                 monitoramento_tasks.id AS task_id,
-                monitoramento.titulo
+                monitoramento.titulo,
+                monitoramento.pesquisa
             FROM 
                 monitoramento_filas
                 JOIN monitoramento_tasks ON monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
@@ -89,24 +91,32 @@ const fila_monitoramento_repo = {
 
         const resp = await conn.query(` 
             SELECT  
-                    monitoramento.id as monitoramento_id,
-                    monitoramento.prioridade,
-                    monitoramento_tasks.id as task_id,
-                    monitoramento_tasks.task_status,
-                    monitoramento.titulo,
-                    monitoramento.alvo
-            from 
+                monitoramento.id AS monitoramento_id,
+                monitoramento.prioridade,
+                monitoramento_tasks.id AS task_id,
+                monitoramento_tasks.task_status,
+                monitoramento.titulo,
+                monitoramento.alvo,
+                monitoramento.pesquisa
+            FROM 
                 monitoramento_filas
-                join monitoramento_tasks on monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
-                join monitoramento on monitoramento.id = monitoramento_tasks.monitoramento_id
+                JOIN monitoramento_tasks ON monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
+                JOIN monitoramento ON monitoramento.id = monitoramento_tasks.monitoramento_id
             WHERE  
                 monitoramento_filas.client_id = ?
-            order by monitoramento_filas.id DESC, monitoramento.prioridade ASC
+                AND monitoramento_filas.id = (
+                    SELECT MAX(mf.id) 
+                    FROM monitoramento_filas mf
+                    WHERE mf.client_id = monitoramento_filas.client_id
+                )
+            ORDER BY 
+                monitoramento.prioridade ASC;
         ${injectString}`, {
             binds:[ client_id ]
         })
 
         if(resp.error) {
+            console.log(resp.error_code, resp.error_message);
             await conn.rollBack()
             return false 
         }
@@ -128,6 +138,7 @@ const fila_monitoramento_repo = {
                     monitoramento.titulo,
                     monitoramento.alvo,
                     monitoramento.prioridade,
+                    monitoramento.pesquisa,
                     1 as task_status
             from 
                 monitoramento
@@ -150,18 +161,22 @@ const fila_monitoramento_repo = {
         `)
 
         if(getAllMonitoramentosAtivos.error){
+            console.log("aqui 1");
             await conn.rollBack()
             return false
         }
 
         const monitoramentosAtivos = (getAllMonitoramentosAtivos.rows as any[])
         if(monitoramentosAtivos.length == 0){
+            console.log("aqui 2");
             await conn.finish()
             return []
         }
 
         const addFila = await conn.execute(`insert into monitoramento_filas (client_id) values (${client_id})`)
         if(addFila.error){
+            console.log("aqui 3");
+            
             await conn.rollBack()
             return false
         }
@@ -179,6 +194,7 @@ const fila_monitoramento_repo = {
 
         const insertRes = await conn.execute(q)
         if(insertRes.error){
+            console.log("aqui 4");
             await conn.rollBack()
             return false
         }
@@ -302,24 +318,20 @@ const fila_monitoramento_repo = {
 
     },
 
-    alterarStatusMonitoramentoTask: async (task_id:number, client_id:number, status:number) => {
-        
+    alterarStatusMonitoramentoTask: async (task_id:number, status:number) => {
+
         const conn = await multiTransaction();
 
         const respExec = await conn.execute(`
             update 
                 monitoramento_tasks
-            join 
-                monitoramento_filas on monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
             set
                 monitoramento_tasks.task_status = ${status}
             where 
-                monitoramento_filas.client_id = ${client_id} 
-            and 
                 monitoramento_tasks.id = ${task_id}
         `)
 
-        if(respExec.error){
+        if(respExec.error){   
             await conn.rollBack()
             return false
         }

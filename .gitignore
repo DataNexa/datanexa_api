@@ -1,5 +1,8 @@
+config.prod.json
+
 server/*
 !server/readme.md
+
 # Logs
 logs
 *.log

@@ -93,7 +93,6 @@ export default {
 
     alterarStatusTask: async (req:Request, res:Response) =>{
 
-        await body('client_id').isNumeric().run(req)
         await body('task_id').isNumeric().run(req)
         await body('status').isInt({min:0}).run(req)
 
@@ -104,9 +103,9 @@ export default {
             })
         }
 
-        const { client_id, task_id, status } = req.body
+        const { task_id, status } = req.body
 
-        const respo = await fila_monitoramento_repo.alterarStatusMonitoramentoTask(task_id, client_id, status)
+        const respo = await fila_monitoramento_repo.alterarStatusMonitoramentoTask(task_id, status)
 
         if(!respo){
             return response(res, {
@@ -117,6 +116,6 @@ export default {
 
         response(res)
 
-    }
+    }   
 
 }
