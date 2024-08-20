@@ -35,7 +35,7 @@ const publicacoes_repo = {
         const resp = await execute(`
             insert into 
                 publicacoes 
-                   (monitoramento_id, titulo, texto, avaliacao, link, local_pub, data_pub, curtidas, compatilhamento, visualizacoes )
+                   (monitoramento_id, titulo, texto, avaliacao, link, local_pub, data_pub, curtidas, compartilhamento, visualizacoes )
             values (?,?,?,?,?,?,?,0,0,0)
         `, {
             binds:[ monitoramento_id, titulo, texto, avaliacao, link, local_pub, data_pub ]

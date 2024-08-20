@@ -1,10 +1,11 @@
-import {readFileSync} from 'fs';
+import {readFileSync, writeFileSync} from 'fs';
 import { join } from 'path'
 
 class Config {
     
     private static config:Config;
-    private conf:{version:string, production:boolean}
+    private conf:{version:string, production:boolean, configurado:boolean}
+    private conf_str:string;
     private data:{
         port:number,
         token_default:string,
@@ -14,6 +15,10 @@ class Config {
             pass:string,
             port:number,
             name:string
+        },
+        master:{
+            email:string,
+            senha:string
         }
     }
     
@@ -21,10 +26,15 @@ class Config {
 
     private constructor(){
         let res:Buffer   = readFileSync(join(__dirname, `../../config.json`))
-        this.conf        = JSON.parse(res.toString());
+        this.conf_str    = res.toString()
+        this.conf        = JSON.parse(this.conf_str);
         let ext:string   = `../../config.${(this.conf.production?"prod":"dev")}.json`
         let dat:Buffer   = readFileSync(join(__dirname, ext))
         this.data        = JSON.parse(dat.toString());
+        if(this.conf.configurado){
+            this.data.master.email = ""
+            this.data.master.senha = ""
+        }
     }
 
     public static instance(){
@@ -44,6 +54,11 @@ class Config {
 
     public isInProduction(){
         return this.conf.production
+    }
+
+    public setConfigured(){
+        this.conf.configurado = true
+        writeFileSync(join(__dirname, `../../config.json`), JSON.stringify(this.conf))
     }
 }
 

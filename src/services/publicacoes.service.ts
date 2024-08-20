@@ -12,7 +12,7 @@ export default {
         await body('titulo').isString().run(req)
         await body('texto').isString().run(req)
         await body('avaliacao').isNumeric().run(req)
-        await body('link').isNumeric().run(req)
+        await body('link').isString().run(req)
         await body('local_pub').isString().run(req)
         await body('data_pub').isString().run(req)
 
