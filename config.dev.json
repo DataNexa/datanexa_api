@@ -11,5 +11,11 @@
     "master":{
         "email":"test2@email.com",
         "senha":"senhatest@123"
+    },
+    "smtp_user":{
+        "endpoint":"email-smtp.us-east-2.amazonaws.com",
+        "iam":"ses-smtp-user.xxxxx",
+        "user":"xxxxxx",
+        "pass":"xxxxxx"
     }
 }

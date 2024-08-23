@@ -114,6 +114,7 @@ create table if not exists service_actions (
     nome varchar(255) not null,
     descricao varchar(255) not null,
     ativo tinyint(1) default 1,
+    list tinyint(1) not null default 0,
 
     foreign key(service_id)
         references services(id),

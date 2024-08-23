@@ -1,12 +1,9 @@
 
-import insert from "./insert_monitoramento_fake"
-
+import send_email_test from "./send_email_test"
 
 const init = async () => {
     
-    await insert()    
-
-    console.log("finalizou");
+   await send_email_test()
     
 }
 

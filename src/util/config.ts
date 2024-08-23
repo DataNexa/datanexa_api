@@ -19,6 +19,12 @@ class Config {
         master:{
             email:string,
             senha:string
+        },
+        smtp_user:{
+            endpoint:string,
+            iam:string,
+            user:string,
+            pass:string
         }
     }
     

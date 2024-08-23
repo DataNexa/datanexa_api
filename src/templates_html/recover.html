@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código de Confirmação</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dddddd;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #333333;
+        }
+        .content {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .content p {
+            font-size: 18px;
+            color: #333333;
+        }
+        .code {
+            display: inline-block;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 10px;
+            letter-spacing: 2px;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #dddddd;
+            font-size: 14px;
+            color: #999999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://datanexa.com.br/datanexa_icon.png">
+            <h1>Código de Confirmação</h1>
+        </div>
+        <div class="content">
+            <p>Olá {{nome}},</p>
+            <p>Use o código baixo para confirmar sua conta ou recuperar o acesso.</p>
+            <p>Código:</p>
+            <div class="code">{{code}}</div>
+        </div>
+        <div class="footer">
+            <p>Não compartilhe este código com ninguém.</p>
+            <p>Se você não solicitou este código, por favor, ignore este email.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -6,7 +6,7 @@ import { generateSessionTemp, generateToken } from '../libs/session_manager';
 import globals from '../config/globals';
 import { account_repo, JOIN } from '../repositories/account.repo';
 import { user_repo } from '../repositories/user.repo';
-
+import sendConfirmationEmail from '../libs/aws';
 
 
 export default {
@@ -146,12 +146,19 @@ export default {
 
         if(!globals.production){
             console.log(template_code);
+        } else {
+            if(await sendConfirmationEmail('', email, code)){
+                return response(res, {
+                    code:200,
+                    message:"codigo enviado com sucesso"
+                }, next)
+            }
         }
 
-        response(res, {
-            code:200,
-            message:"codigo enviado com sucesso"
-        }, next)
+        return response(res, {
+            code:404,
+            message:`Erro ao tentar enviar o e-mail para ${email}`
+        })
 
     },
     
