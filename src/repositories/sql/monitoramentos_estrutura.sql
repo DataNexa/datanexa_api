@@ -37,7 +37,7 @@ create table if not exists monitoramento_tasks (
     id bigint(255) not null auto_increment,
     monitoramento_id bigint(255) not null,
     monitoramento_fila_id bigint(255) not null,
-    task_status int(11) not null default 1, /* 1 - aguardando, 2 - trabalhando, 3 - finalizado */
+    task_status int(11) not null default 1, 
 
     foreign key(monitoramento_id)
         references monitoramento(id),
@@ -71,9 +71,9 @@ create table if not exists publicacoes (
     titulo varchar(255) not null,
     texto text not null,
     avaliacao tinyint(1) not null, 
-    /* 0 negativo, 1 neutro, 2 positivo */
+    
     link varchar(255) not null,
-    local_pub varchar(255) not null, /* web, facebook, instagram, twitter, youtube */
+    local_pub varchar(255) not null, 
     curtidas int(11) not null default(0),
     compartilhamento int(11) not null default(0),
     visualizacoes int(11) not null default(0),

@@ -37,7 +37,7 @@ interface user_token_account {
 
 interface permission_i {
     nome:string, 
-    actions:Array<{nome:string, descricao:string, checked:boolean, id:number}>
+    actions:Array<{nome:string, descricao:string, checked:boolean, id:number, list:boolean}>
 }
 
 interface response_unique_i {
@@ -50,29 +50,21 @@ interface response_unique_i {
 
 const listPermissions = async (conn?:MultiTransaction) => {
 
-    const queryPermissions = conn ? await conn.query(`
-        select 
-            service_actions.id as id,
-            services.nome as nome_service,
-            service_actions.nome as nome_action,
-            service_actions.descricao as descricao
-        from 
-            service_actions 
-        join
-            services on service_actions.service_id = services.id
-        order by service_actions.slug
-    `) : await query(`
-        select 
-            service_actions.id as id,
-            services.nome as nome_service,
-            service_actions.nome as nome_action,
-            service_actions.descricao as descricao
-        from 
-            service_actions 
-        join
-            services on service_actions.service_id = services.id
-        order by service_actions.slug
-    `)
+    const qstr = `
+    select 
+        service_actions.id as id,
+        services.nome as nome_service,
+        service_actions.nome as nome_action,
+        service_actions.descricao as descricao,
+        service_actions.list
+    from 
+        service_actions 
+    join
+        services on service_actions.service_id = services.id
+    order by service_actions.slug
+    `
+
+    const queryPermissions = conn ? await conn.query(qstr) : await query(qstr)
 
     if(queryPermissions.error){
         return []
@@ -96,7 +88,8 @@ const listPermissions = async (conn?:MultiTransaction) => {
             nome:row.nome_action,
             id:row.id,
             descricao:row.descricao,
-            checked:false
+            checked:false,
+            list:row.list == 1
         })
     }
 

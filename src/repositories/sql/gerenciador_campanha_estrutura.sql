@@ -15,6 +15,9 @@ create table if not exists tarefas (
     id bigint(255) not null auto_increment,
     campanha_id bigint(255) not null,
     tarefa varchar(255) not null,
+    descricao varchar(255) not null,
+    creatAt datetime,
+    dataLimite datetime,
     status tinyint(1) default 0,
 
     foreign key(campanha_id)

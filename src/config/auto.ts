@@ -47,6 +47,7 @@ async function save_master_user(email:string, senha:string){
         return true;
 
     } catch (error) {
+        
         await conn.rollBack();
         return false;
     }

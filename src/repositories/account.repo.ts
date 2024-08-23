@@ -590,7 +590,7 @@ const account_repo = {
         const hash_salt     = JWT.newToken(`${acc[0].id}hash_salt${Date.now()}`)
 
         const response_register = await account_repo.registerToken(
-            acc[0].token_account_id,
+            parseInt(acc[0].token_account_id),
             hash_salt,
             refresh_token,
             user_agent,

@@ -8,7 +8,6 @@ create table if not exists pesquisas (
     ativo tinyint(1),
     createAt datetime not null,
     duration datetime,
-    --- 0 'inativo', 1 'rascunho', 2 'publico', 3 'consolidado'
 
     foreign key(client_id)
         references client(id),

@@ -12,6 +12,8 @@ create table if not exists account (
     nome varchar(100) not null,
     email varchar(250) not null unique,
     senha varchar(255),
+    confirmed tinyint(1) not null default 0,
+    temporary tinyint(1) not null default 0,
 
     primary key(id)
 )ENGINE=InnoDB;
@@ -112,6 +114,7 @@ create table if not exists service_actions (
     nome varchar(255) not null,
     descricao varchar(255) not null,
     ativo tinyint(1) default 1,
+    list tinyint(1) not null default 0,
 
     foreign key(service_id)
         references services(id),
