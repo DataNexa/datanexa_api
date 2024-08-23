@@ -220,7 +220,7 @@ const fila_monitoramento_repo = {
         const conn = await multiTransaction()
 
         const getAllMonitoramentos = await conn.query(`
-            SELECT id FROM monitoramento WHERE client_id = ?
+            SELECT id FROM monitoramento WHERE client_id = ? 
         `, { binds: [client_id]})
 
         if (getAllMonitoramentos.error) {
@@ -230,8 +230,8 @@ const fila_monitoramento_repo = {
 
         const rows = getAllMonitoramentos.rows as any[]
         const monitoramentoIds = rows.map(row => row.id)
-
-        const allValid = monitoramentoIds.every(id => order_ids.includes(id))
+        
+        const allValid = order_ids.every(id => monitoramentoIds.includes(id))
         if (!allValid) {
             await conn.rollBack
             return false
