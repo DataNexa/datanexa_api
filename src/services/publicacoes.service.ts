@@ -6,6 +6,29 @@ import { publicacoes_repo } from '../repositories/publicacoes.repo'
 
 export default {
 
+    filter: async (req:Request, res:Response) => {
+
+        await body('links').isArray().run(req)
+        await body('monitoramento_id').isInt().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { monitoramento_id, links } = req.body 
+
+        const links_filtrados = await publicacoes_repo.filter_links(monitoramento_id, links)
+
+        response(res, {
+            body: links_filtrados,
+            code: 200
+        })
+
+    },
+
     add: async (req:Request, res:Response) => {
         
         await body('monitoramento_id').isNumeric().run(req)
