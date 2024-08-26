@@ -146,13 +146,12 @@ export default {
 
         if(!globals.production){
             console.log(template_code);
-        } else {
-            if(await sendConfirmationEmail('', email, code)){
-                return response(res, {
-                    code:200,
-                    message:"codigo enviado com sucesso"
-                }, next)
-            }
+        } 
+        if(await sendConfirmationEmail('', email, code)){
+            return response(res, {
+                code:200,
+                message:"codigo enviado com sucesso"
+            }, next)
         }
 
         return response(res, {

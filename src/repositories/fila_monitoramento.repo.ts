@@ -36,7 +36,7 @@ const fila_monitoramento_repo = {
             join
                 monitoramento on client.id = monitoramento.client_id
             where 
-                client.ativo = 1 and monitoramento.ativo = 1
+                client.ativo = 1
             group by 
                 client.id;
         `)
@@ -97,18 +97,22 @@ const fila_monitoramento_repo = {
                 monitoramento_tasks.task_status,
                 monitoramento.titulo,
                 monitoramento.alvo,
-                monitoramento.pesquisa
+                monitoramento.pesquisa,
+                GROUP_CONCAT(hashtags.tag SEPARATOR ' ') AS hashtags
             FROM 
                 monitoramento_filas
                 JOIN monitoramento_tasks ON monitoramento_tasks.monitoramento_fila_id = monitoramento_filas.id
                 JOIN monitoramento ON monitoramento.id = monitoramento_tasks.monitoramento_id
+                LEFT JOIN hashtags ON hashtags.monitoramento_id = monitoramento.id
             WHERE  
-                monitoramento_filas.client_id = ?
+                monitoramento_filas.client_id = 1
                 AND monitoramento_filas.id = (
                     SELECT MAX(mf.id) 
                     FROM monitoramento_filas mf
                     WHERE mf.client_id = monitoramento_filas.client_id
                 )
+            GROUP BY 
+                monitoramento.id, monitoramento_tasks.id
             ORDER BY 
                 monitoramento.prioridade ASC;
         ${injectString}`, {

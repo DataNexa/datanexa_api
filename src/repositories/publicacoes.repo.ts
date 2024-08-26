@@ -30,6 +30,26 @@ interface unique_response {
 
 const publicacoes_repo = {
 
+    filter_links: async (monitoramento_id:number, links:string[]):Promise<string[]> => {
+
+        const placeholders = links.map(() => '?').join(', ');
+        const q = `SELECT link FROM publicacoes WHERE link IN (${placeholders}) and monitoramento_id = ${monitoramento_id}`;
+
+        const resp = await query(q, {
+            binds:links
+        })
+
+        if(resp.error){
+            return []
+        }
+
+        const links_listados  = (resp.rows as { link:string }[]).map(row => row.link)
+        const links_filtrados = links.filter( link => !links_listados.includes(link)) 
+
+        return links_filtrados
+
+    },
+
     add: async (monitoramento_id:number, titulo:string, texto:string, avaliacao:number, link:string, local_pub:string, data_pub:string) => {
 
         const resp = await execute(`
@@ -41,7 +61,7 @@ const publicacoes_repo = {
             binds:[ monitoramento_id, titulo, texto, avaliacao, link, local_pub, data_pub ]
         })
 
-        return resp.error
+        return !resp.error
 
     },
         
@@ -53,7 +73,7 @@ const publicacoes_repo = {
                 publicacoes.id,  
                 publicacoes.monitoramento_id,  
                 publicacoes.titulo,  
-                publicacoes.texto,  
+                SUBSTRING(publicacoes.texto, 1, 200) AS texto, 
                 publicacoes.avaliacao,  
                 publicacoes.link,  
                 publicacoes.local_pub,  

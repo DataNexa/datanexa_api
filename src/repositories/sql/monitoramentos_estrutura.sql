@@ -85,3 +85,5 @@ create table if not exists publicacoes (
     primary key(id)
 
 )ENGINE=InnoDB;
+
+ALTER TABLE publicacoes ADD CONSTRAINT unique_link UNIQUE (link);
