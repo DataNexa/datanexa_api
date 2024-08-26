@@ -72,7 +72,7 @@ const publicacoes_repo = {
             SELECT  
                 publicacoes.id,  
                 publicacoes.monitoramento_id,  
-                publicacoes.titulo,  
+                SUBSTRING(publicacoes.titulo, 1, 50) AS titulo,  
                 SUBSTRING(publicacoes.texto, 1, 200) AS texto, 
                 publicacoes.avaliacao,  
                 publicacoes.link,  
