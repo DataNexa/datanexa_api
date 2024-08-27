@@ -22,11 +22,13 @@ async function sendConfirmationEmail(nome:string, to: string, code: string) {
 
     try {
         await transporter.sendMail({
-            from: '"DataNexa Atendimento " <atendimento@datanexa.com.br>',
+            from: `"DataNexa Atendimento" <${conf.smtp_user.user}>`,
             to: to,
             subject: 'Código de Confirmação disponível',
             html: template,
         });
+        console.log("enviado:", to, code);
+        
         return true
     } catch (error) {
         console.error('Erro ao enviar email:', error);
