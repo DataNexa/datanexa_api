@@ -7,6 +7,7 @@ const router = Router()
 
 export default () => {
 
+    router.post('/filter_by_date', authorization_route('anyUserAuthorized', ['monitoramento@list']), publicacoes_service.filter_by_date)
     router.post('/list', authorization_route('anyUserAuthorized', ['monitoramento@list']), publicacoes_service.list)
     router.post('/unique', authorization_route('anyUserAuthorized', ['monitoramento@list']), publicacoes_service.unique)
     router.post('/add', onlyBot(), publicacoes_service.add)

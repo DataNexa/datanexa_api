@@ -68,7 +68,8 @@ export default {
 
         await body('client_id').isNumeric().run(req)
         await body('id').isNumeric().run(req)
-
+        await body('dataini').isString().run(req)
+        await body('datafim').isString().run(req)
 
         if(!validationResult(req).isEmpty()){
             return response(res, {
@@ -77,8 +78,8 @@ export default {
             })
         }
         
-        const { client_id,id } = req.body
-        const resp_repo = await monitoramento_repo.unique(client_id,id)
+        const { client_id, id, dataini, datafim } = req.body
+        const resp_repo = await monitoramento_repo.unique(client_id,id,dataini,datafim)
 
         if(resp_repo.error){
             return response(res, {
