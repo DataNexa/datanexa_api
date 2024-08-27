@@ -115,7 +115,7 @@ const monitoramento_repo = {
         return (resp.rows as monitoramento_i[])
     },    
     
-    unique: async (client_id:number,id:number):Promise<unique_response> =>  {
+    unique: async (client_id:number,id:number, dataini:string, datafim:string):Promise<unique_response> =>  {
         
         const conn = await multiTransaction()
 
@@ -167,10 +167,11 @@ const monitoramento_repo = {
                     publicacoes 
                WHERE 
                     monitoramento_id = ? 
+                    AND publicacoes.data_pub BETWEEN ? AND ?
             GROUP BY 
                     local_pub;
         `, {
-            binds:[id]
+            binds:[id, dataini, datafim]
         })
         
         if(publicacoesQ.error){

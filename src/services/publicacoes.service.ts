@@ -6,6 +6,30 @@ import { publicacoes_repo } from '../repositories/publicacoes.repo'
 
 export default {
 
+    filter_by_date: async (req:Request, res:Response) => {
+        
+        await body('monitoramento_id').isInt().run(req)
+        await body('client_id').isInt().run(req)
+        await body('dataini').isString().run(req)
+        await body('datafim').isString().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { monitoramento_id, client_id, dataini, datafim } = req.body 
+        const resp_repo = await publicacoes_repo.filter_by_date(monitoramento_id,client_id,dataini,datafim)
+    
+        response(res, {
+            code:200,
+            body:resp_repo
+        })
+        
+    },
+
     filter: async (req:Request, res:Response) => {
 
         await body('links').isArray().run(req)

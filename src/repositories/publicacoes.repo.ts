@@ -30,7 +30,43 @@ interface unique_response {
 
 const publicacoes_repo = {
 
+    filter_by_date: async (monitoramento_id:number, client_id:number, dataini:string, datafim:string) => {
+
+        const q = await query(`
+            SELECT  
+                publicacoes.id,  
+                publicacoes.monitoramento_id,  
+                SUBSTRING(publicacoes.titulo, 1, 50) AS titulo,  
+                SUBSTRING(publicacoes.texto, 1, 200) AS texto, 
+                publicacoes.avaliacao,  
+                publicacoes.link,  
+                publicacoes.local_pub,  
+                publicacoes.curtidas,  
+                publicacoes.compartilhamento,  
+                publicacoes.visualizacoes,  
+                publicacoes.data_pub
+            FROM publicacoes 
+                JOIN monitoramento on publicacoes.monitoramento_id = monitoramento.id 
+                JOIN client on monitoramento.client_id = client.id 
+            WHERE monitoramento.id = ? 
+                AND client.id = ? 
+                AND publicacoes.data_pub BETWEEN ? AND ?
+            ORDER BY id DESC;
+        `, {
+            binds:[monitoramento_id,client_id, dataini, datafim]
+        })
+
+        if(q.error){
+            return []
+        }
+
+        return (q.rows as publicacoes_i[])
+
+    },
+
     filter_links: async (monitoramento_id:number, links:string[]):Promise<string[]> => {
+
+        if(links.length == 0) return []
 
         const placeholders = links.map(() => '?').join(', ');
         const q = `SELECT link FROM publicacoes WHERE link IN (${placeholders}) and monitoramento_id = ${monitoramento_id}`;
@@ -85,7 +121,7 @@ const publicacoes_repo = {
                 JOIN monitoramento on publicacoes.monitoramento_id = monitoramento.id 
                 JOIN client on monitoramento.client_id = client.id 
             WHERE monitoramento.id = ? and client.id = ? 
-            ORDER BY id DESC
+            ORDER BY id DESC LIMIT 300
         ${injectString}`, {
             binds:[monitoramento_id,client_id]
         })
