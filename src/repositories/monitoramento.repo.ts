@@ -115,6 +115,78 @@ const monitoramento_repo = {
         return (resp.rows as monitoramento_i[])
     },    
     
+    read: async (client_id:number,id:number):Promise<unique_response> => {
+
+        const conn = await multiTransaction()
+
+        const resp = await conn.query(` 
+            SELECT  
+                monitoramento.id,  
+                monitoramento.client_id,  
+                monitoramento.titulo,  
+                monitoramento.descricao,  
+                monitoramento.ativo,  
+                monitoramento.repetir, 
+                monitoramento.creatat,  
+                monitoramento.pesquisa,  
+                monitoramento.alvo
+            from monitoramento 
+                join client on monitoramento.client_id = client.id 
+    
+            WHERE  client.id = ? 
+            and monitoramento.id = ? `, {
+            binds:[client_id,id]
+        })
+
+        if(resp.error) {
+            await conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:'Erro no servidor'
+            } 
+        }
+
+        const rows = (resp.rows as monitoramento_i[])
+
+        if(rows.length == 0) return {
+            error:true,
+            code:404,
+            message:'Registro não encontrado'
+        }  
+
+        const monitoramento = rows[0]
+
+        const hashtagsQ = await conn.query(`
+            SELECT
+                tag
+            from hashtags
+            where monitoramento_id = ${id}
+        `)
+
+        if(hashtagsQ.error){
+            await conn.rollBack()
+            return {
+                error:true,
+                code:500,
+                message:hashtagsQ.error_message ? hashtagsQ.error_message : 'Erro ao resgatar hashtags do monitoramento'
+            }
+        }
+
+
+        monitoramento.hashtags = (hashtagsQ.rows as {tag:string}[]).map(item => item.tag)
+
+        await conn.finish()
+
+        return {
+            error:false,
+            code:200,
+            message:'',
+            row: monitoramento
+        }  
+        
+    },
+
     unique: async (client_id:number,id:number, dataini:string, datafim:string):Promise<unique_response> =>  {
         
         const conn = await multiTransaction()
