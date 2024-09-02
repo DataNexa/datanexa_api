@@ -528,4 +528,4 @@ const monitoramento_repo = {
     
 }
 
-export { monitoramento_repo, monitoramento_i }
+export { monitoramento_repo, monitoramento_i, publicacao_stats }

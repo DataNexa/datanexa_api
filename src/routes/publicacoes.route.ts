@@ -12,6 +12,8 @@ export default () => {
     router.post('/unique', authorization_route('anyUserAuthorized', ['monitoramento@list']), publicacoes_service.unique)
     router.post('/add', onlyBot(), publicacoes_service.add)
     router.post('/filter', onlyBot(), publicacoes_service.filter)
+    router.post('/list_by_media', onlyBot(), publicacoes_service.list_by_media)
+    router.post('/update', onlyBot(), publicacoes_service.update)
 
     return router
     

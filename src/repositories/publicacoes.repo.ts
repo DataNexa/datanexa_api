@@ -30,6 +30,49 @@ interface unique_response {
 
 const publicacoes_repo = {
 
+    list_by_media: async(media:string) => {
+        const resp = await query(` 
+            SELECT  
+                publicacoes.id,  
+                publicacoes.monitoramento_id,  
+                publicacoes.titulo,  
+                publicacoes.texto, 
+                publicacoes.avaliacao,  
+                publicacoes.link,  
+                publicacoes.local_pub,  
+                publicacoes.curtidas,  
+                publicacoes.compartilhamento,  
+                publicacoes.visualizacoes,  
+                publicacoes.data_pub
+            FROM publicacoes 
+                JOIN monitoramento on publicacoes.monitoramento_id = monitoramento.id 
+                JOIN client on monitoramento.client_id = client.id 
+            WHERE monitoramento.id = ? and publicacoes.local_pub = ?
+            ORDER BY id DESC 
+        `, {
+            binds:[media]
+        })
+
+        if(resp.error) return false 
+
+        return (resp.rows as publicacoes_i[])  
+    },
+
+    update: async (id:number, titulo:string, texto:string, avaliacao:string, data_pub:string) => {
+
+        const resp = await execute(
+            `update publicacoes set 
+                titulo = ?, texto = ?, avaliacao = ?, data_pub = ?
+            where
+                id = ?
+            `, {
+                binds:[titulo, texto, avaliacao, data_pub, id]
+            })
+
+        return !resp.error
+
+    },
+
     filter_by_date: async (monitoramento_id:number, client_id:number, dataini:string, datafim:string) => {
 
         const q = await query(`

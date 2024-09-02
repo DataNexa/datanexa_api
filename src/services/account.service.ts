@@ -6,7 +6,7 @@ import { generateSessionTemp, generateToken } from '../libs/session_manager';
 import globals from '../config/globals';
 import { account_repo, JOIN } from '../repositories/account.repo';
 import { user_repo } from '../repositories/user.repo';
-import sendConfirmationEmail from '../libs/aws';
+import sendConfirmationEmail from '../libs/email';
 
 
 export default {
@@ -154,7 +154,7 @@ export default {
             }, next)
         }
 
-        return response(res, {
+        response(res, {
             code:404,
             message:`Erro ao tentar enviar o e-mail para ${email}`
         })

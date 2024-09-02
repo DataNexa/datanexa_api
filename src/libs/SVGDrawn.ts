@@ -106,7 +106,7 @@ function createDonut( id:string, size:number, elements:donut_i[]|number[], emMil
             `
             rotate    += rotate_pattern * el
         } else {
-            svg_donut += `${ generateDonutPath(size, id, el.multiply) }`
+            svg_donut += `${ generateDonutPath(size, `${id}${i}`, el.multiply) }`
             svg_uses  += `<use xlink:href="#${id}${i}" transform="rotate(${rotate} ${size / 2} ${size / 2})" class="${el.color}"/>
             `
             rotate    += rotate_pattern * el.multiply

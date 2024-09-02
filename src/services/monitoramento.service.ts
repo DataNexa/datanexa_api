@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
 import response from '../util/response'
 import { body, validationResult } from 'express-validator'
-
+import { drawMonitoramentoReport } from '../libs/drawpdf/drawpdf'
 import { monitoramento_repo, monitoramento_i } from '../repositories/monitoramento.repo'
+import Data from '../util/data'
 
 
 export default {
@@ -271,6 +272,61 @@ export default {
 
         response(res)
 
-    } 
+    },
+
+    gerarRelatorio: async (req:Request, res:Response) => {
+        
+        await body('client_id').isNumeric().run(req)
+        await body('id').isNumeric().run(req)
+
+        await body('dataini').isString().run(req)
+        await body('datafim').isString().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { client_id, id, dataini, datafim } = req.body
+        const resp_repo = await monitoramento_repo.unique(client_id, id, dataini, datafim)
+
+        if(resp_repo.error){
+            return response(res, {
+                code:resp_repo.code,
+                message: resp_repo.message
+            })
+        }
+
+        try {
+
+            const monitoramento = resp_repo.row as monitoramento_i
+
+            const pdfBytes = await drawMonitoramentoReport({
+                hashtags:monitoramento.hashtags ? monitoramento.hashtags.join(" ") : "",
+                pesquisa:monitoramento.pesquisa,
+                titulo: monitoramento.titulo,
+                descricao: monitoramento.descricao,
+                data_ini: new Data(dataini).toBr(),
+                data_fim: new Data(datafim).toBr(),
+            }, monitoramento.stats ? monitoramento.stats : []);
+            
+            if(pdfBytes){
+                res.setHeader('Content-Disposition', 'attachment; filename='+monitoramento.titulo+'.pdf');
+                res.setHeader('Content-Type', 'application/pdf');
+                res.send(Buffer.from(pdfBytes));
+            } else {
+                return response(res, {
+                    code:400,
+                    message:'Bad Request'
+                })
+            }
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            res.status(500).send('Internal Server Error');
+        }
+
+    }
 
 }

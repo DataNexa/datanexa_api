@@ -114,6 +114,62 @@ export default {
 
     },
 
+    update: async (req:Request, res:Response) => {
+
+        await body('id').isString().run(req)
+        await body('titulo').isString().run(req)
+        await body('texto').isString().run(req)
+        await body('avaliacao').isInt().run(req)
+        await body('data_pub').isString().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { id, titulo, texto, avaliacao, data_pub } = req.body
+        const resp_repo = await publicacoes_repo.update(id, titulo, texto, avaliacao, data_pub)
+        
+        if(!resp_repo){
+            return response(res, {
+                code:500,
+                message: "Não foi possivel realizar o update"
+            })
+        }
+
+        response(res)
+    },
+
+    list_by_media: async (req:Request, res:Response) => {
+
+        await body('media').isString().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request"
+            })
+        }
+
+        const { media } = req.body
+        const resp_repo = await publicacoes_repo.list_by_media(media)
+        
+        if(!resp_repo){
+            return response(res, {
+                code:404,
+                message: "Não encontrado"
+            })
+        }
+
+        response(res, {
+            code:200,
+            body:resp_repo
+        })
+
+    },
+
     unique: async (req:Request, res:Response) => {
 
         await body('monitoramento_id').isNumeric().run(req)
