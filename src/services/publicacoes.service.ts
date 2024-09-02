@@ -116,7 +116,7 @@ export default {
 
     update: async (req:Request, res:Response) => {
 
-        await body('id').isString().run(req)
+        await body('id').isInt().run(req)
         await body('titulo').isString().run(req)
         await body('texto').isString().run(req)
         await body('avaliacao').isInt().run(req)
