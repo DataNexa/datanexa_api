@@ -47,7 +47,7 @@ const publicacoes_repo = {
             FROM publicacoes 
                 JOIN monitoramento on publicacoes.monitoramento_id = monitoramento.id 
                 JOIN client on monitoramento.client_id = client.id 
-            WHERE monitoramento.id = ? and publicacoes.local_pub = ?
+            WHERE publicacoes.local_pub = ?
             ORDER BY id DESC 
         `, {
             binds:[media]
