@@ -105,7 +105,7 @@ const fila_monitoramento_repo = {
                 JOIN monitoramento ON monitoramento.id = monitoramento_tasks.monitoramento_id
                 LEFT JOIN hashtags ON hashtags.monitoramento_id = monitoramento.id
             WHERE  
-                monitoramento_filas.client_id = 1
+                monitoramento_filas.client_id = ?
                 AND monitoramento_filas.id = (
                     SELECT MAX(mf.id) 
                     FROM monitoramento_filas mf
@@ -165,22 +165,18 @@ const fila_monitoramento_repo = {
         `)
 
         if(getAllMonitoramentosAtivos.error){
-            console.log("aqui 1");
             await conn.rollBack()
             return false
         }
 
         const monitoramentosAtivos = (getAllMonitoramentosAtivos.rows as any[])
         if(monitoramentosAtivos.length == 0){
-            console.log("aqui 2");
             await conn.finish()
             return []
         }
 
         const addFila = await conn.execute(`insert into monitoramento_filas (client_id) values (${client_id})`)
         if(addFila.error){
-            console.log("aqui 3");
-            
             await conn.rollBack()
             return false
         }
