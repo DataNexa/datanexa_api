@@ -12,6 +12,7 @@ import hashtags_route from "./hashtags.route"
 import response from "../util/response"
 import bots_route from "./bots.route"
 import client_route from "./client.route"
+import notification_route from "./notification.route"
 
 export default (app:Express) => {
 
@@ -27,6 +28,7 @@ export default (app:Express) => {
     app.use('/monitoramento', monitoramento_route())
     app.use('/hashtags', hashtags_route())
     app.use('/bots', bots_route())
+    app.use('/notification', notification_route())
     app.get('/401', (req:Request, res:Response) => response(res, {
         code:401,
         message:'Not Authorized'

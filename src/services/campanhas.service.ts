@@ -7,11 +7,9 @@ import { campanhas_repo, campanhas_i } from '../repositories/campanhas.repo'
 export default {
 
     
-
     list: async (req:Request, res:Response) => {
 
         await body('client_id').isNumeric().run(req)
-
 
         if(!validationResult(req).isEmpty()){
             return response(res, {
