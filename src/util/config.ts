@@ -25,7 +25,8 @@ class Config {
             iam:string,
             user:string,
             pass:string
-        }
+        },
+        key_push:string
     }
     
     public static path = process.env.PATH || process.cwd();

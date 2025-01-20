@@ -10,11 +10,12 @@ const authorization = (req:Request, res:Response, next?:NextFunction):Authorizat
 
 const authorization_route = (auth:string, permissions:string[] = []) => {
     
-    if(['onlyAdmin', 'onlyClientAdmin', 'onlyUserClient', 'anyAdmins', 'anyUserAuthorized', 'botAndUserAuthorized'].includes(auth))
+    if(['onlyAdmin', 'anyUser', 'onlyClientAdmin', 'onlyUserClient', 'anyAdmins', 'anyUserAuthorized', 'botAndUserAuthorized'].includes(auth))
         return (req:Request, res:Response, next:NextFunction) => {
             const auth_obj = authorization(req, res, next)
             auth_obj.setPermissions(permissions)
             switch (auth) {
+                case 'anyUser': auth_obj.anyUser();break;
                 case 'onlyAdmin': auth_obj.onlyAdmin();break;
                 case 'onlyClientAdmin': auth_obj.onlyClientAdmin();break;
                 case 'onlyUserClient': auth_obj.onlyUserClient();break;

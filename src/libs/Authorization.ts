@@ -98,6 +98,15 @@ class Authorization {
         return false
     }
 
+    anyUser():boolean|void {
+
+        if(!this.res.user || this.res.user.getTypeUser() == type_user.ANONIMUS) 
+            return this.next ? response(this.res, {code:401, message:this.unauthorizedMessage}) : false
+    
+        return this.next ? this.next() : true
+        
+    }
+
     anyUserAuthorized():boolean|void{
 
         if(!this.res.user) return response(this.res, {code:401, message:this.unauthorizedMessage})
