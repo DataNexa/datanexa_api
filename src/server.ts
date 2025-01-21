@@ -3,7 +3,7 @@ import init from "./config/init";
 
 (
     async () => {
-        (await init()).listen(globals.port, () => {
+        (await init(globals.version)).listen(globals.port, () => {
             console.log(`
             * ██████╗░░█████╗░████████╗░█████╗░███╗░░██╗███████╗██╗░░██╗░█████╗░ *
             * ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗████╗░██║██╔════╝╚██╗██╔╝██╔══██╗ *

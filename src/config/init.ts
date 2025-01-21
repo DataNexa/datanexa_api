@@ -1,6 +1,6 @@
-import express, { Express } from "express";
-import { User } from "../libs/User";
-import UserFactory from "../libs/UserFactory";
+import express, { Express, Request, Response } from "express";
+import { User } from "../types/User.d";
+import userFactory from "../libs/UserFactory";
 import routes from "../routes/routes";
 import cors from 'cors';
 import create_master_user from "./auto";
@@ -8,13 +8,12 @@ import create_master_user from "./auto";
 declare global{
     namespace Express {
         interface Response {
-            user: User,
-            dataBody:any // aqui será injetado o dado
+            user: User
         }
     }
 }
 
-export default async ():Promise<Express> => {
+export default async (version:string):Promise<Express> => {
 
     const created = await create_master_user()
     if(!created){
@@ -27,7 +26,8 @@ export default async ():Promise<Express> => {
     };
     app.use(cors(cors_options))
     app.use('/', express.json())
-    app.use('/', UserFactory)
+    app.use('/', userFactory)
+    app.get('/', (req:Request, res:Response) => res.send(`<b>DATANEXA API</b> <br> <i>version: ${version}</i>`))
     routes(app)
     return app
 
