@@ -1,11 +1,12 @@
 
 type FilterQuery = {
 
-    filters:{},
+    filters:{[key:string]},
     sort:string[],
     limit:number,
     offset:number,
-    search:string|Search
+    search:string|Search,
+    ignoredParams:string[]
 
 }
 

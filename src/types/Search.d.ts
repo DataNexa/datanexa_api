@@ -1,8 +1,8 @@
 type Search = {
 
-    have_words:string[],
-    this_phrase:string,
-    can_haved:string[]
+    obrigatorias:string[],
+    podeTer:string[],
+    naoPodemTer:string[]
 
 }
 

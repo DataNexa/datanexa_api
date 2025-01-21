@@ -1,10 +1,9 @@
 import express, {Express, Request, Response} from "express"
-
-import files from "../services/files"
+import filesRoutes from "./files.routes"
 
 export default (app:Express) => {
 
-    app.get('/types/:file', files.types)
+    app.use('/files', filesRoutes())
 
     return app
 
