@@ -6,16 +6,19 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "test": "sucrase-node src/_testes/test.ts"
+    "test": "npx jest"
   },
   "author": "Andrei Coelho",
   "license": "ISC",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/jest": "^29.5.14",
     "@types/mysql": "^2.15.26",
     "@types/node": "^20.13.0",
     "@types/pdfmake": "^0.2.9",
+    "jest": "^29.7.0",
     "sucrase": "^3.35.0",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.4.5"
   },
   "dependencies": {
