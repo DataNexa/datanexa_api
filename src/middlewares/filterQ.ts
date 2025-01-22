@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
 import { FilterQuery } from '../types/FilterQuery';
+import transform from '../util/SearchTransform';
 
 export const filterQ = (req: Request, res: Response, next: NextFunction) => {
+
     const { query } = req;
+
     const parsedQuery: FilterQuery = {
         filters: {},
         sort: [],
@@ -23,7 +26,7 @@ export const filterQ = (req: Request, res: Response, next: NextFunction) => {
         } else if (key === 'limit' || key === 'offset') {
             parsedQuery[key] = parseInt(query[key] as string, 10) || 0;
         } else if (key === 'search'){
-                  
+            parsedQuery[key] = transform(query[key] as string)
         } else {
             parsedQuery.ignoredParams.push(key);
         }

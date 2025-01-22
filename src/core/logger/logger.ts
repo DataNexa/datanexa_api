@@ -1,4 +1,4 @@
-import { query, execute } from "./query";
+import { query, execute } from "../core/database/query";
 import globals from "../config/globals";
 
 const saveLog = async (slug_service_action:string, texto:string, user_id?:number) => {

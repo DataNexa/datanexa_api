@@ -1,5 +1,5 @@
 import Config from "../util/config";
-import { multiTransaction } from "../util/query";
+import { multiTransaction } from "../core/database/query";
 import JWT from '../libs/JWT';
 
 const conf = Config.instance()

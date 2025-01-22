@@ -1,4 +1,4 @@
-import globals from "../config/globals";
+import globals from "../../config/globals";
 import { createPool, RowDataPacket, QueryError, QueryResult, Pool, PoolConnection, } from "mysql2/promise";
 
 const database = globals.database

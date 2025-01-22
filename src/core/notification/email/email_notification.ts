@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
-import Config from '../util/config';
+import Config from '../../../util/config';
 
 const conf = Config.instance().getData()
 
@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 
 async function sendConfirmationEmail(nome:string, to: string, code: string) {
 
-    const templatePath = path.join(__dirname, '../templates_html/recover.html');
+    const templatePath = path.join(__dirname, 'recover.html');
     let template = fs.readFileSync(templatePath, 'utf8');
     
     template = template.replace('{{code}}', code); 

@@ -1,6 +1,6 @@
 import express, { Express, Request, Response } from "express";
 import { User } from "../types/User.d";
-import userFactory from "../libs/UserFactory";
+import userFactory from "../core/auth/UserFactory";
 import routes from "../routes/routes";
 import cors from 'cors';
 import create_master_user from "./auto";
