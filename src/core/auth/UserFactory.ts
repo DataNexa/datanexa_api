@@ -1,6 +1,6 @@
 
 import express, {  Request, Response, NextFunction } from "express";
-import { user_type, UserDetail } from "../types/User.d";
+import { user_type, UserDetail } from "../../types/User";
 
 
 export default  async (req:Request, res:Response, next:NextFunction) => {

@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import globals from '../config/globals'
+import globals from '../../config/globals'
 import * as bcrypt from 'bcrypt';
 
 interface header {

@@ -21,7 +21,7 @@ function join(word:string):string{
 
 function transform(text:string):Search {
 
-    const parts = text.trim().split(" ")
+    const parts = text.trim().split(RegExp(/\s+/g))
     const obj:Search = {
         obrigatorias:[],
         podeTer:[],

@@ -1,4 +1,4 @@
-import Config from "../util/config";
+import Config from "../../../util/config";
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 

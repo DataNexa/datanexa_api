@@ -18,12 +18,6 @@ export default (res: Response, dataResponse: response_i = { code: 200 }, next?: 
 
         res.setHeader('Content-Type', 'application/json');
 
-        const user = res.user;
-
-        if (user && user.isNewSession()) {
-            dataResponse.session = user.getSession();
-        }
-
         res.status(dataResponse.code).json(dataResponse); // Envia a resposta
 
         if (next && dataResponse.code === 200) {

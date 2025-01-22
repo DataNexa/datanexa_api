@@ -3,7 +3,7 @@ import SearchTransform from "./SearchTransform"
 SearchTransform
 
 test('transformação de texto completo', () => {
-    expect(SearchTransform("+palavra1+palavra2 palavra3 -palavra4 +palavra5")).toMatchObject({
+    expect(SearchTransform("+palavra1+palavra2 palavra3   -palavra4 +palavra5")).toMatchObject({
         obrigatorias: [ 'palavra1 palavra2', 'palavra5' ],
         podeTer: [ 'palavra3' ],
         naoPodemTer: [ 'palavra4' ]

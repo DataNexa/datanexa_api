@@ -9,7 +9,8 @@ interface User {
 
 interface UserDetail extends User {
     email:string,
-    nome:String
+    nome:String,
+    id:number
 }
 
 export { User, UserDetail, user_type }

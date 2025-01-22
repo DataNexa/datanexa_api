@@ -7,6 +7,9 @@ class Data {
 
     constructor(data?:string|null|Date){
         if(data) {
+            if(typeof(data) == 'string'){
+                data = data.trim()
+            }
             this.data = new Date(data)
             if(isNaN(this.data.getTime())){
                 this.data = undefined
@@ -18,24 +21,38 @@ class Data {
         
     }
 
+    private getSplitedDate(){
+        if(!this.data) return [0,0,0]
+        return [ 
+            this.data.getUTCDate().toString().padStart(2, '0'), 
+            (this.data.getUTCMonth() + 1).toString().padStart(2, '0'), 
+            this.data.getUTCFullYear() 
+        ]
+    }
+
+    private getSplitedTime(){
+        if(!this.data) return [0,0,0]
+        return [
+            this.data.getUTCHours().toString().padStart(2, '0'), 
+            this.data.getUTCMinutes().toString().padStart(2, '0'), 
+            this.data.getUTCSeconds().toString().padStart(2, '0')
+        ]
+    }
+
     public toEn(time:boolean = false){
         
-        if(!this.data) return "indeterminado"
+        if(!this.data) return undefined
 
         if(this.endate != "" && this.time == time){
             return this.endate
         }
 
-        let  dia  = this.data.getDate().toString().padStart(2, '0'),
-             mes  = (this.data.getMonth()+1).toString().padStart(2, '0'),
-             ano  = this.data.getFullYear(),
-        datafinal = `${ano}-${mes}-${dia}`
+        let [dia,mes,ano] = this.getSplitedDate()
+        let datafinal = `${ano}-${mes}-${dia}`
 
         if(time){
-            let horas    = this.data.getHours(),
-                minutos  = this.data.getMinutes(),
-                segundos = this.data.getSeconds()
-            datafinal   += ` ${horas}:${minutos}:${segundos}`
+            let [horas,minutos,segundos] = this.getSplitedTime()
+            datafinal += ` ${horas}:${minutos}:${segundos}`
         }
 
         this.time = time
@@ -46,21 +63,17 @@ class Data {
 
     public toBr(time:boolean = false){
     
-        if(!this.data) return "indeterminado"
+        if(!this.data) return undefined
 
         if(this.brdate != "" && this.time == time){
             return this.brdate
         }
 
-        let  dia  = this.data.getDate().toString().padStart(2, '0'),
-             mes  = (this.data.getMonth()+1).toString().padStart(2, '0'),
-             ano  = this.data.getFullYear(),
-        datafinal = `${dia}/${mes}/${ano}`
+        let [dia,mes,ano] = this.getSplitedDate()
+        let datafinal = `${dia}/${mes}/${ano}`
 
         if(time){
-            let horas    = this.data.getHours(),
-                minutos  = this.data.getMinutes(),
-                segundos = this.data.getSeconds()
+            let [horas,minutos,segundos] = this.getSplitedTime()
             datafinal   += ` ${horas}:${minutos}:${segundos}`
         }
 
@@ -75,4 +88,14 @@ class Data {
     }
 }
 
-export default Data
+function dateToBr(dataEn:string|null|Date, time:boolean = false){
+    const data = new Data(dataEn)
+    return data.toBr(time)
+}
+
+function dateToEn(dataBr:string|null|Date, time:boolean = false){
+    const data = new Data(dataBr)
+    return data.toEn(time)
+}
+
+export { Data, dateToBr, dateToEn }
