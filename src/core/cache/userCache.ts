@@ -1,26 +1,41 @@
-import createClient from "ioredis";
+import CacheRedis from "./CacheRedis";
 import { UserDetail } from "../../types/User.d";
 
-const redis = new createClient()
-
-const quit =  () => redis.quit().then(() => process.exit(0)).catch(() => process.exit(1))
-process.on('SIGINT', quit)
-process.on('SIGTERM', quit)
 
 const saveDataUser = async (dataUser:UserDetail) => {
-    return await redis.set(dataUser.id.toString(), JSON.stringify(dataUser), 'EX', 3600) == 'OK'
+    try {
+        const redis = CacheRedis.getInstance()
+        const redisClient = redis.getClient();
+        return await redisClient.set("user:"+dataUser.id.toString(), JSON.stringify(dataUser), 'EX', 3600) == 'OK'
+    } catch (err) {
+        console.error("Erro ao usar o Redis:", err);
+        return false
+    }
 }
 
 const getDataUser = async (id:number):Promise<UserDetail|false> => {
-    let datastr = await redis.get(id.toString())
-    if(!datastr) return false 
-    return JSON.parse(datastr)
+    try {
+        const redis = CacheRedis.getInstance()
+        const redisClient = redis.getClient();
+        let datastr = await redisClient.get("user:"+id.toString())
+        if(!datastr) return false 
+        return JSON.parse(datastr)
+    } catch (err) {
+        console.error("Erro ao usar o Redis:", err);
+        return false
+    }
 }
 
-const deleteDataUser = async (id:number) => await redis.del(id.toString());
+const deleteDataUser = async (id:number) => {
+    const redis = CacheRedis.getInstance()
+    const redisClient = redis.getClient();
+    return await redisClient.del("user:"+id.toString());
+}
 
+const quit = async () => await CacheRedis.getInstance().quit()
 
 export default {
+    quit,
     saveDataUser,
     getDataUser,
     deleteDataUser
