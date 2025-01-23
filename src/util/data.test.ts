@@ -31,6 +31,4 @@ describe("teste de datas", () => {
         expect(dateToBr('10-10-10')).toBe('10/10/2010')
     })
 
-
-
 })

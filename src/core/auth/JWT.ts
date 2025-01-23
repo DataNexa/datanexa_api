@@ -1,24 +1,26 @@
 import crypto from 'crypto'
 import globals from '../../config/globals'
 import * as bcrypt from 'bcrypt';
+import { user_type } from '../../types/User';
 
 interface header {
     alg:string,
-    type:number,
+    type:user_type,
     expire_in:number
 }
 
 export default { 
 
-    generate: function(header:header, body:Object, hash_salt:string = "", vtoken:number = 0){
+    generate: function(header:header, body:any, hash_salt:string = "", vtoken:number = 0){
         
         const h = Buffer.from(JSON.stringify(header)).toString('base64')
         const b = Buffer.from(JSON.stringify(body)).toString('base64');
-
-        return `${h}.${b}.${crypto.createHmac(header.alg, globals.token_default+hash_salt+vtoken.toString()).update(h+'.'+b).digest('base64')}`
+        body["vtoken"] = vtoken
+        
+        return `${h}.${b}.${crypto.createHmac(header.alg, globals.token_default+hash_salt).update(h+'.'+b).digest('base64')}`
     },
 
-    verify: function(hash:string, hash_salt:string = "", vtoken:number = 0){
+    verify: function(hash:string, hash_salt:string = ""){
 
         try {
 
@@ -26,7 +28,7 @@ export default {
             const header = JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8'))
             
             const cripth = Buffer.from(
-                crypto.createHmac(header.alg, globals.token_default+hash_salt+vtoken.toString())
+                crypto.createHmac(header.alg, globals.token_default+hash_salt)
                 .update(parts[0]+'.'+parts[1])
                 .digest('base64'), 'base64'
             ).toString('ascii')
