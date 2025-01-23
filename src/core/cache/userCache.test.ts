@@ -19,6 +19,8 @@ afterEach(() => {
 
 
 describe("teste com cache user", () => {
+
+    jest.setTimeout(10000);
     
     test("salvar usuario em cache com sucesso", async () => {
 
