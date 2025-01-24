@@ -1,7 +1,5 @@
 config.prod.json
 
-*/userCache.test.ts
-
 server/*
 !server/readme.md
 

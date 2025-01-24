@@ -4,7 +4,7 @@ import JWT from "./JWT"
 describe("JWT Testes", () => {
 
     test("gerar jwt e verificar o token", () => {
-        const hash_id = "hash_id_test"
+        const id = 1
         const salth   = "salzinho_de_leve"
         const token = JWT.generate(
             {
@@ -13,15 +13,15 @@ describe("JWT Testes", () => {
                 expire_in: (new Date()).getTime() + (3600000 * 10) // 10 horas de expiração
             },
             {
-                hashid:hash_id
+                id:1,
+                vtoken:0,
+                type:1
             },
-            salth,
-            1
         )
-        const other = JWT.verify(token, salth)
+        const other = JWT.verify(token)
         expect(typeof(other)).not.toBe(Boolean)
-        const hash = (other as any)['data']['hashid']
-        expect(hash).toBe(hash_id)
+        const id_test = (other as any)['data']['id']
+        expect(id_test).toBe(id)
         
     })
 

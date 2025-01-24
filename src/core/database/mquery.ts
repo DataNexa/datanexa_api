@@ -56,7 +56,7 @@ class MultiTransaction {
 
     }
 
-    async query(query:string, binds:[] = []):Promise<QueryResponse>{
+    async query(query:string, binds:any[] = []):Promise<QueryResponse>{
         try {
             if(!this.conn) return {
                 error_message:'Not Connected',
@@ -83,7 +83,7 @@ class MultiTransaction {
         }
     }
 
-    async insertOnce(query: string, binds: []): Promise<QueryResponseLastId> {
+    async insertOnce(query: string, binds:any[] = []): Promise<QueryResponseLastId> {
         try {
             if (!this.conn) {
                 return {
@@ -145,7 +145,7 @@ const multiTransaction = async ():Promise<MultiTransaction> => {
 }
 
 
-const insertOnce = async (query:string, binds:[] = []):Promise<QueryResponseLastId> => {
+const insertOnce = async (query:string, binds:any[] = []):Promise<QueryResponseLastId> => {
     try {
 
         let [result, metadata] = await mysqli.execute(query, binds)
@@ -175,7 +175,7 @@ const insertOnce = async (query:string, binds:[] = []):Promise<QueryResponseLast
 
 }
 
-const query = async (query:string, binds:[] = []):Promise<QueryResponse> => { 
+const query = async (query:string, binds:any[] = []):Promise<QueryResponse> => { 
     try {
 
         let [result] = await mysqli.query(query, binds)
@@ -202,7 +202,7 @@ const query = async (query:string, binds:[] = []):Promise<QueryResponse> => {
 }
 
 
-const execute = async (query:string, binds:[] = []):Promise<QueryResponse> => { 
+const execute = async (query:string, binds:any[] = []):Promise<QueryResponse> => { 
     try {
         const [result] = await mysqli.execute(query, binds)
         return {
@@ -227,4 +227,4 @@ const execute = async (query:string, binds:[] = []):Promise<QueryResponse> => {
 
 
 
-export { query , execute, multiTransaction, MultiTransaction } 
+export { query , execute, insertOnce, multiTransaction, MultiTransaction } 
