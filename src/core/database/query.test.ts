@@ -1,4 +1,4 @@
-import { multiTransaction } from "./query";
+import { multiTransaction } from "./mquery";
 import { mysqli } from "./mysqli"
 
 jest.mock('mysql2/promise', () => {

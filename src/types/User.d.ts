@@ -1,16 +1,20 @@
 enum user_type {
-    ANONIMO, CLIENT, ADMIN, BOT
+    ANONIMO = 0, 
+    CLIENT = 1, 
+    ADMIN = 2, 
+    BOT = 3
 }
 
 interface User {
     type:user_type,
-    hashid?:String
+    vtoken:number,
+    id:number
 }
 
 interface UserDetail extends User {
     email:string,
     nome:String,
-    id:number
+    client_id:number
 }
 
 export { User, UserDetail, user_type }

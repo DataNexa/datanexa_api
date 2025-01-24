@@ -1,34 +1,29 @@
 import crypto from 'crypto'
 import globals from '../../config/globals'
 import * as bcrypt from 'bcrypt';
-import { user_type } from '../../types/User';
+import { token, token_header } from '../../types/Token';
+import { UserDetail, User } from '../../types/User';
 
-interface header {
-    alg:string,
-    type:user_type,
-    expire_in:number
-}
 
 export default { 
 
-    generate: function(header:header, body:any, hash_salt:string = "", vtoken:number = 0){
+    generate: function(header:token_header, user:User | UserDetail){
         
         const h = Buffer.from(JSON.stringify(header)).toString('base64')
-        const b = Buffer.from(JSON.stringify(body)).toString('base64');
-        body["vtoken"] = vtoken
+        const b = Buffer.from(JSON.stringify(user)).toString('base64');
         
-        return `${h}.${b}.${crypto.createHmac(header.alg, globals.token_default+hash_salt).update(h+'.'+b).digest('base64')}`
+        return `${h}.${b}.${crypto.createHmac(header.alg, globals.token_default).update(h+'.'+b).digest('base64')}`
     },
 
-    verify: function(hash:string, hash_salt:string = ""){
+    verify: function(token_str:string):token | false {
 
         try {
 
-            const parts  = hash.split('.')
+            const parts  = token_str.split('.')
             const header = JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8'))
             
             const cripth = Buffer.from(
-                crypto.createHmac(header.alg, globals.token_default+hash_salt)
+                crypto.createHmac(header.alg, globals.token_default)
                 .update(parts[0]+'.'+parts[1])
                 .digest('base64'), 'base64'
             ).toString('ascii')
@@ -49,7 +44,7 @@ export default {
 
     },
 
-    newToken: function(value:string, alg:string='sha256', salt:string = ''):string{
+    simpleToken: function(value:string, alg:string='sha256', salt:string = ''):string{
         const hash = crypto.createHash(alg)
         hash.update(value+salt)
         return hash.digest('hex')
