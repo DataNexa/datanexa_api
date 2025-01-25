@@ -1,14 +1,13 @@
 
-import express, {  Request, Response, NextFunction } from "express";
-import { User, user_type, UserDetail } from "../../types/User";
+import {  Request, Response, NextFunction } from "express";
+import { User } from "../../types/User";
 import JWT from "./JWT";
-import globals from "../../config/globals";
 import { token } from "../../types/Token";
 import userCache from "../cache/userCache";
 import userDB from "../database/userDB";
 
 const AnonUser:User = {
-    type:user_type.ANONIMO,
+    type:0,
     vtoken:0,
     id:0
 }
@@ -35,44 +34,50 @@ const generateUserToken = async (user:User) => {
 }
 
 
-const factory = async (token_str?:string):Promise<User> => {
+const factory = async (token_str?:string):Promise<{token:string, user:User}> => {
 
-    if(!token_str) return AnonUser
+    if(!token_str) return { token: '', user:AnonUser }
     
     let token = JWT.verify(token_str)
-    if(!token) return AnonUser
+    if(!token) return { token: '', user:AnonUser }
     
-    let tokenChecked = await checkToken(token)
-    if(!tokenChecked) return AnonUser
+    let tokenChecked = await checkTokenAndGetUser(token)
+    if(!tokenChecked) return { token: '', user:AnonUser }
 
-    return tokenChecked.data
+    // salvar tokenChecked.user no cache
+
+    return { token: (tokenChecked.token == "" ? token_str : tokenChecked.token), user:tokenChecked.user }
 }
 
 
-const checkToken = async (token:token):Promise<token|false> => {
+const checkTokenAndGetUser = async (token:token):Promise<{token:string, user:User}|false> => {
 
     let exp = token.header.expire_in - (new Date()).getTime()
-    let ntoken:token | null = null 
 
     if(exp <= 0) return false
  
     const userC = await userCache.getDataUser(token.data.id)
+    let userF:User
 
-    if(userC && userC.vtoken != token.data.vtoken){
-        return false
-    } else {
-        if((await userDB.getUser(token.data.id)).vtoken != token.data.vtoken){
+    if(userC){
+        if(userC.vtoken != token.data.vtoken)
             return false
-        }
+        userF = userC
+    } else {
+        const userD = await userDB.getUser(token.data.id)
+        if(userD.vtoken != token.data.vtoken)
+            return false
+        userF = userD
     }
+
+    let tokenstr = ""
 
     if(exp < (3600000 * 1)){
         // falta 1 hora para expirar, gerar outro token
-        let tempt = JWT.verify(await generateUserToken(token.data))
-        ntoken = tempt ? tempt : token
+        tokenstr = await generateUserToken(token.data)
     }
 
-    return ntoken ? ntoken : token
+    return { token: tokenstr, user: userF }
 
 }
 

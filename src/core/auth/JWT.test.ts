@@ -5,7 +5,6 @@ describe("JWT Testes", () => {
 
     test("gerar jwt e verificar o token", () => {
         const id = 1
-        const salth   = "salzinho_de_leve"
         const token = JWT.generate(
             {
                 alg:'sha256', 
