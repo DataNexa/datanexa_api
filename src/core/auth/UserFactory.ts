@@ -23,7 +23,7 @@ const generateUserToken = async (user:User) => {
         {
             alg:'sha256', 
             type:1, 
-            expire_in: (new Date()).getTime() + (3600000 * 10) // 10 horas de expiração
+            expire_in: (new Date()).getTime() + (3600000 * 5) // 10 horas de expiração
         },
         {
             id:user.id,
@@ -44,9 +44,8 @@ const factory = async (token_str?:string):Promise<{token:string, user:User}> => 
     let tokenChecked = await checkTokenAndGetUser(token)
     if(!tokenChecked) return { token: '', user:AnonUser }
 
-    // salvar tokenChecked.user no cache
-
     return { token: (tokenChecked.token == "" ? token_str : tokenChecked.token), user:tokenChecked.user }
+    
 }
 
 
@@ -59,9 +58,12 @@ const checkTokenAndGetUser = async (token:token):Promise<{token:string, user:Use
     const userC = await userCache.getDataUser(token.data.id)
     let userF:User
 
+    let isInCache = false
+
     if(userC){
         if(userC.vtoken != token.data.vtoken)
             return false
+        isInCache = true
         userF = userC
     } else {
         const userD = await userDB.getUser(token.data.id)
@@ -70,10 +72,13 @@ const checkTokenAndGetUser = async (token:token):Promise<{token:string, user:Use
         userF = userD
     }
 
+    if(!isInCache){
+        userCache.saveDataUser(userF)
+    }
+    
     let tokenstr = ""
 
     if(exp < (3600000 * 1)){
-        // falta 1 hora para expirar, gerar outro token
         tokenstr = await generateUserToken(token.data)
     }
 
