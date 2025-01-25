@@ -1,8 +1,8 @@
 import CacheRedis from "./CacheRedis";
-import { UserDetail } from "../../types/User.d";
+import { UserDetail, User } from "../../types/User.d";
 
 
-const saveDataUser = async (dataUser:UserDetail) => {
+const saveDataUser = async (dataUser:User|UserDetail) => {
     try {
         const redis = CacheRedis.getInstance()
         const redisClient = redis.getClient();
@@ -13,7 +13,7 @@ const saveDataUser = async (dataUser:UserDetail) => {
     }
 }
 
-const getDataUser = async (id:number):Promise<UserDetail|false> => {
+const getDataUser = async (id:number):Promise<User|false> => {
     try {
         const redis = CacheRedis.getInstance()
         const redisClient = redis.getClient();

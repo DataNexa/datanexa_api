@@ -41,6 +41,10 @@ jest.mock('../cache/userCache', () => {
             return mockcacheuser["user:"+id]
         }),
 
+        saveDataUser:jest.fn((user:User) => {
+            return true
+        })
+
     }
 
 })
