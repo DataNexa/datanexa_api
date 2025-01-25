@@ -45,7 +45,7 @@ async function getUser(user_id:number, client_id?:number):Promise<User> {
         let rows = res.rows as any[]
         if(rows.length == 0) return UserFactory.AnonUser
         let u = rows[0] 
-        return client_id || u['type'] == user_type.ADMIN ? u as UserDetail : u as User
+        return client_id || u['type'] == 2 ? u as UserDetail : u as User
     }
 
     return UserFactory.AnonUser
@@ -103,7 +103,7 @@ async function saveUserDetail(user:UserDetail){
         return false
     }
 
-    if(user.type == user_type.CLIENT && !await saveUserClient(multi, user)){
+    if(user.type == 1 && !await saveUserClient(multi, user)){
         await multi.rollBack()
         return false
     }
@@ -113,4 +113,4 @@ async function saveUserDetail(user:UserDetail){
 
 }
 
-export  default { saveUserBOT, saveUserDetail, getUser }
+export default { saveUserBOT, saveUserDetail, getUser }

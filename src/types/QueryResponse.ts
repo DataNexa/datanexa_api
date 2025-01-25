@@ -2,7 +2,7 @@ import { QueryResult } from "mysql2"
 
 interface QueryResponse {
     error:boolean,
-    rows:QueryResult,
+    rows:QueryResult | any[],
     error_code:any,
     error_message:any
 }
