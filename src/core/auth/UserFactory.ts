@@ -1,5 +1,4 @@
 
-import {  Request, Response, NextFunction } from "express";
 import { User } from "../../types/User";
 import JWT from "./JWT";
 import { token } from "../../types/Token";
@@ -10,11 +9,6 @@ const AnonUser:User = {
     type:0,
     vtoken:0,
     id:0
-}
-
-
-const factoryMiddleware = async (req:Request, res:Response, next:NextFunction) => {
-    // todo
 }
 
 
@@ -38,7 +32,7 @@ const factory = async (token_str?:string):Promise<{token:string, user:User}> => 
 
     if(!token_str) return { token: '', user:AnonUser }
     
-    let token = JWT.verify(token_str)
+    let token = JWT.verify(token_str.trim())
     if(!token) return { token: '', user:AnonUser }
     
     let tokenChecked = await checkTokenAndGetUser(token)
@@ -87,4 +81,4 @@ const checkTokenAndGetUser = async (token:token):Promise<{token:string, user:Use
 }
 
 
-export default { factoryMiddleware, factory, AnonUser }
+export default { factory, AnonUser }

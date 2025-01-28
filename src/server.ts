@@ -1,5 +1,5 @@
-import globals from "./config/globals";
-import init from "./config/init";
+import globals from "./app/globals";
+import init from "./app/init";
 
 (
     async () => {

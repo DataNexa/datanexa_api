@@ -1,6 +1,6 @@
 import Config from "../util/config";
 import { multiTransaction } from "../core/database/mquery";
-import JWT from '../libs/JWT';
+import JWT from '../core/auth/JWT';
 
 const conf = Config.instance()
 
@@ -27,9 +27,7 @@ async function save_master_user(email:string, senha:string){
 
         const accountInsertResult = await conn.execute(
             `INSERT INTO account (nome, email, senha, confirmed) VALUES (?, ?, ?, 1)`,
-            {
-                binds:['Master', email, hashedPassword]
-            }
+            ['Master', email, hashedPassword]
         );
 
         const accid = (accountInsertResult.rows as any).insertId;
@@ -37,9 +35,7 @@ async function save_master_user(email:string, senha:string){
         await conn.execute(
             `INSERT INTO user (slug, account_id, ativo, tipo_usuario, accepted) 
              VALUES (?, ?, 1, 2, 1)`,
-            {
-                binds:[slug, accid]
-            }
+             [slug, accid]
         );
 
         await conn.finish();

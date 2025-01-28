@@ -1,9 +1,10 @@
 import express, { Express, Request, Response } from "express";
-import { User } from "../types/User.d";
-import userFactory from "../core/auth/UserFactory";
+import { User } from "../types/User";
+import authMid from "../middlewares/AuthMid";
 import routes from "../routes/routes";
 import cors from 'cors';
 import create_master_user from "./auto";
+import { filterQueryMid } from "../middlewares/FilterQueryMid";
 
 declare global{
     namespace Express {
@@ -21,14 +22,18 @@ export default async (version:string):Promise<Express> => {
     }
 
     const app:Express = express()
+
+    app.get('/', (req:Request, res:Response) => res.send(`<b>DATANEXA API</b> <br> <i>version: ${version}</i>`))
+    
     const cors_options: cors.CorsOptions = {
         origin: "*"
     };
     app.use(cors(cors_options))
     app.use('/', express.json())
-    app.use('/', userFactory)
-    app.get('/', (req:Request, res:Response) => res.send(`<b>DATANEXA API</b> <br> <i>version: ${version}</i>`))
+    app.use('/', authMid)
+    app.use('/', filterQueryMid)
     routes(app)
+    
     return app
 
 }

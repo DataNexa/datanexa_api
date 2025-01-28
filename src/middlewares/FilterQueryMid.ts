@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { FilterQuery } from '../types/FilterQuery';
 import transform from '../util/SearchTransform';
 
-export const filterQ = (req: Request, res: Response, next: NextFunction) => {
+export const filterQueryMid = (req: Request, res: Response, next: NextFunction) => {
 
     const { query } = req;
 
@@ -16,7 +16,8 @@ export const filterQ = (req: Request, res: Response, next: NextFunction) => {
     };
   
     Object.keys(query).forEach((key) => {
-        if (key.startsWith('filter[') && key.endsWith(']')) {
+   
+        if (key.startsWith('filter(') && key.endsWith(')')) {
             const filterKey = key.slice(7, -1);
             if (filterKey) {
                 parsedQuery.filters![filterKey] = query[key];
@@ -24,15 +25,23 @@ export const filterQ = (req: Request, res: Response, next: NextFunction) => {
         } else if (key === 'sort') {
             parsedQuery.sort = (query[key] as string).split(',');
         } else if (key === 'limit' || key === 'offset') {
-            parsedQuery[key] = parseInt(query[key] as string, 10) || 0;
+            let val = parseInt(query[key] as string, 10) || 0;
+            if(key == 'limit'){
+                if(val > 50) val = 50 
+                else if(val == 0) val = 10 
+            }
+            parsedQuery[key] = val
         } else if (key === 'search'){
-            parsedQuery[key] = transform(query[key] as string)
+            const searchValue = decodeURIComponent(query[key] as string);
+            parsedQuery[key] = transform(searchValue)
         } else {
             parsedQuery.ignoredParams.push(key);
         }
+
     });
   
     req.body.parsedQuery = parsedQuery;
   
     next();
+
 };
