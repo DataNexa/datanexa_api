@@ -1,5 +1,5 @@
 import { mysqli, PoolConnection } from "./mysqli"
-import globals from "../../config/globals"
+import globals from "../../app/globals"
 import { QueryResponse, QueryResponseLastId } from "../../types/QueryResponse";
 
 
@@ -27,7 +27,7 @@ class MultiTransaction {
         return true
     }
     
-    async execute(query:string, binds:[] = []):Promise<QueryResponse>{
+    async execute(query:string, binds:any[] = []):Promise<QueryResponse>{
         try {
             if(!this.conn) return {
                 error:true,

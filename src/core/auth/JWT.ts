@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import globals from '../../config/globals'
+import globals from '../../app/globals'
 import * as bcrypt from 'bcrypt';
 import { token, token_header } from '../../types/Token';
 import { UserDetail, User } from '../../types/User';
