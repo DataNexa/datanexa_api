@@ -96,13 +96,13 @@ class MultiTransaction {
             }
     
             const [result, metadata] = await this.conn.execute(query, binds);
-    
+            
             return {
                 error_message: '',
                 error_code: 0,
                 error: false,
                 rows: result,
-                lastInsertId: (metadata as any).insertId // Retorna o lastInsertId
+                lastInsertId: (result as any).insertId // Retorna o lastInsertId
             };
         } catch (error) {
             await this.rollBack();

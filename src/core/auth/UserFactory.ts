@@ -38,7 +38,7 @@ const factory = async (token_str?:string):Promise<{token:string, user:User}> => 
     let tokenChecked = await checkTokenAndGetUser(token)
     if(!tokenChecked) return { token: '', user:AnonUser }
 
-    return { token: (tokenChecked.token == "" ? token_str : tokenChecked.token), user:tokenChecked.user }
+    return { token: tokenChecked.token, user:tokenChecked.user }
     
 }
 

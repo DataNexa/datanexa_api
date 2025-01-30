@@ -5,6 +5,7 @@ const authMid = async (req:Request, res:Response, next:NextFunction) => {
 
     if(!req.headers.authorization){
         res.user = UserFactory.AnonUser
+        res.token = ''
         req.body.token = ''
         next()
         return
@@ -14,6 +15,7 @@ const authMid = async (req:Request, res:Response, next:NextFunction) => {
 
     if (type !== 'Bearer' || !token) {
         res.user = UserFactory.AnonUser
+        res.token = ''
         req.body.token = ''
         next()
         return
@@ -21,7 +23,9 @@ const authMid = async (req:Request, res:Response, next:NextFunction) => {
     
     const data = await UserFactory.factory(token)
     res.user = data.user
+    res.token = data.token
     req.body.token = data.token
+
     next()
     
 }

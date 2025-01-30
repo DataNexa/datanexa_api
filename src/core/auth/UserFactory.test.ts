@@ -144,7 +144,7 @@ describe("UserFacory testes", () => {
         expect(user.vtoken).toBe(0) 
 
     })
-
+    
 
     test("Retorna usuário anonimo quando o vtoken está diferente no registro do usuário no banco", async () => {
 
@@ -186,14 +186,14 @@ describe("UserFacory testes", () => {
 
         const data = await UserFactory.factory(token)
 
-        expect(data.token).toBe(token)
+        expect(data.token).toBe("")
         expect(data.user.id).toBe(3)
 
     })
 
     test("Recupera usuário e Gera um novo token antes de expirar", async () => {
         
-        const token = JWT.generate(
+       const token = JWT.generate(
             {
                 alg:'sha256', 
                 type:1, 

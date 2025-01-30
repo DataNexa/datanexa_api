@@ -10,9 +10,9 @@ jest.mock("../core/auth/UserFactory", () => {
     }
 
     return {
-        factory: jest.fn( async (token_str:string) => {
+        factory: jest.fn( async () => {
             return {
-                token:token_str,
+                token:"",
                 user: {
                     type:1,
                     vtoken:1,
@@ -73,7 +73,7 @@ describe("Teste do Middleware de Autenticação gerando um User", () => {
             {
                 alg:'sha256', 
                 type:1, 
-                expire_in: (new Date()).getTime() + (3600000 * 10) // 10 horas de expiração
+                expire_in: (new Date()).getTime() + (3600000 * 24) // 24 horas de expiração
             },
             {
                 id:1,
@@ -91,7 +91,7 @@ describe("Teste do Middleware de Autenticação gerando um User", () => {
             vtoken:1
         })
 
-        expect(token).toBe(requestO.body.body.token)
+        expect(requestO.body.body.token).toBe("")
 
     })
 

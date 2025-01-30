@@ -1,10 +1,13 @@
 import {readFileSync, writeFileSync} from 'fs';
 import { join } from 'path'
+import * as dotenv from 'dotenv';
+
+dotenv.config()
 
 class Config {
     
     private static config:Config;
-    private conf:{version:string, production:boolean, configurado:boolean}
+    private conf:{ version:string, production:boolean, configurado:boolean }
     private conf_str:string;
     private data:{
         port:number,
@@ -17,31 +20,56 @@ class Config {
             name:string
         },
         master:{
-            email:string,
-            senha:string
+            email?:string,
+            senha?:string
         },
         smtp_user:{
-            endpoint:string,
-            iam:string,
-            user:string,
-            pass:string
+            endpoint?:string,
+            iam?:string,
+            user?:string,
+            pass?:string
         },
         key_push:string
+    } = {
+        token_default:"",
+        port:4000,
+        database:{
+            host:"",
+            user:"",
+            pass:"",
+            port:3306,
+            name:""
+        },
+        master:{},
+        smtp_user:{},
+        key_push:''
     }
     
     public static path = process.env.PATH || process.cwd();
 
     private constructor(){
+
         let res:Buffer   = readFileSync(join(__dirname, `../../config.json`))
         this.conf_str    = res.toString()
         this.conf        = JSON.parse(this.conf_str);
-        let ext:string   = `../../config.${(this.conf.production?"prod":"dev")}.json`
-        let dat:Buffer   = readFileSync(join(__dirname, ext))
-        this.data        = JSON.parse(dat.toString());
-        if(this.conf.configurado){
-            this.data.master.email = ""
-            this.data.master.senha = ""
-        }
+        
+        this.data.database.host = process.env.DATABASE_HOST ?? ""
+        this.data.database.user = process.env.DATABASE_USER ?? ""
+        this.data.database.pass = process.env.DATABASE_PASS ?? ""
+        this.data.database.name = process.env.DATABASE_NAME ?? ""
+
+        this.data.database.port = parseInt(process.env.DATABASE_PORT ?? "3306")
+
+        this.data.token_default = process.env.TOKEN_DEFAULT ?? ""
+        this.data.port = parseInt(process.env.PORT ?? "4000")
+
+        this.data.master.email  = process.env.MASTER_EMAIL
+        this.data.master.senha  = process.env.MASTER_PASSWORD
+
+        this.data.smtp_user.endpoint = process.env.SMTP_USER_ENDPOINT
+        this.data.smtp_user.user     = process.env.SMTP_USER_EMAIL
+        this.data.smtp_user.pass     = process.env.SMTP_USER_PASSWORD
+
     }
 
     public static instance(){
