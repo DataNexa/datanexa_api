@@ -1,14 +1,8 @@
 import { NextFunction, Response } from 'express'
+import { RequestResponse } from '../types/RequestResponse';
 
-interface response_i {
-    body?:any,
-    session?:string,
-    redirect?:string,
-    message?:string,
-    code:number
-}
 
-export default (res: Response, dataResponse: response_i = { code: 200 }, next?: NextFunction) => {
+export default (res: Response, dataResponse: RequestResponse = { code: 200 }, next?: NextFunction) => {
     try {
 
         if (res.headersSent) {
@@ -16,7 +10,11 @@ export default (res: Response, dataResponse: response_i = { code: 200 }, next?: 
             return;
         }
 
-        res.setHeader('Content-Type', 'application/json');
+        if(res.token && res.token !== ""){
+            dataResponse.session = res.token
+        }
+
+        res.setHeader('Content-Type', 'application/json')
 
         res.status(dataResponse.code).json(dataResponse); // Envia a resposta
 

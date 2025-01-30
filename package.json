@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "test": "npx jest"
+    "test": "npx jest",
+    "test-local":"npx jest --testMatch='**/src/repositories/**/*.test.ts'"
   },
   "author": "Andrei Coelho",
   "license": "ISC",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/dotenv": "^8.2.3",
     "@types/jest": "^29.5.14",
     "@types/mysql": "^2.15.26",
     "@types/node": "^20.13.0",
@@ -30,6 +32,7 @@
     "@types/nodemailer": "^6.4.15",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^4.19.2",
     "express-validator": "^7.1.0",
     "firebase": "^11.2.0",
