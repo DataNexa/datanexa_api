@@ -12,18 +12,14 @@ const AnonUser:User = {
 }
 
 
-const generateUserToken = async (user:User) => {
+const generateUserToken = async (user:User, expire_horas:number = 10) => {
     return JWT.generate(
         {
             alg:'sha256', 
             type:1, 
-            expire_in: (new Date()).getTime() + (3600000 * 5) // 10 horas de expiração
+            expire_in: (new Date()).getTime() + (3600000 * expire_horas)
         },
-        {
-            id:user.id,
-            vtoken:user.vtoken,
-            type:user.type
-        },
+        user
     )
 }
 
@@ -81,4 +77,4 @@ const checkTokenAndGetUser = async (token:token):Promise<{token:string, user:Use
 }
 
 
-export default { factory, AnonUser }
+export default { factory, AnonUser, generateUserToken }

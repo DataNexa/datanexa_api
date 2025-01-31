@@ -44,7 +44,7 @@ export default {
 
     },
 
-    simpleToken: function(value:string, alg:string='sha256', salt:string = ''):string{
+    generateHash: function(value:string, alg:string='sha256', salt:string = ''):string{
         const hash = crypto.createHash(alg)
         hash.update(value+salt)
         return hash.digest('hex')

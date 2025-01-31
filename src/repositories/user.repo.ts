@@ -1,11 +1,73 @@
 
-import { multiTransaction, query } from "../core/database/mquery"
+import JWT from "../core/auth/JWT"
+import { execute, multiTransaction, query } from "../core/database/mquery"
 import { User, UserDetail } from "../types/User"
 import password from "../util/password"
 
 
-const getUserByEmailAndPass = async (email:string, senha:string):Promise<UserDetail|undefined> => {
+const getUserByEmailAndPass = async (email:string, senha:string, device:string, ip:string):Promise<{user: UserDetail|undefined, hash:string}|undefined> => {
 
+    const multi = await multiTransaction()
+
+    const q = await multi.query(`
+            select 
+                user.id as id,
+                user.vtoken as vtoken,
+                user.type as type,
+                user_detail.nome as nome,
+                user_detail.email as email,
+                user_detail.senha as senha,
+                user_client.client_id as client_id
+            from 
+                user
+            join
+                user_detail on user_detail.user_id = user.id 
+            left join 
+                user_client on user.id = user_client.user_id
+            where
+                user_detail.email = '${email}'
+
+    `)
+
+    if(q.error || (q.rows as any[]).length == 0) {
+        await multi.rollBack()
+        return undefined
+    }
+
+    const userDB = (q.rows as any[])[0]
+
+    if(!await password.comparePass(senha, userDB.senha)){
+        await multi.rollBack()
+        return undefined
+    }
+
+    const hash = JWT.generateHash(userDB.id.toString()+email+device+ip)
+
+    const q2 = await multi.insertOnce(`
+            insert into user_device (user_id, device, ip, hash_device)
+            values (?,?,?,?)
+        `, [userDB.id, device, ip, hash])
+
+    if(q2.error){
+        await multi.rollBack()
+        return undefined
+    }
+
+    await multi.finish()    
+
+    userDB.senha = ""
+
+    if(!userDB.client_id){
+        userDB.client_id = 0
+    }
+
+    return { user: userDB as UserDetail, hash: hash} 
+
+}
+
+
+const getUserByEmail = async (email:string):Promise<UserDetail|undefined> => {
+    
     const q = await query(`
             select 
                 user.id as id,
@@ -26,19 +88,45 @@ const getUserByEmailAndPass = async (email:string, senha:string):Promise<UserDet
 
     `)
 
-    if(q.error || (q.rows as any[]).length == 0) return undefined
-
-    const userDB = (q.rows as any[])[0]
-
-    if(!await password.comparePass(senha, userDB.senha)){
+    if(q.error || (q.rows as any[]).length == 0) {
         return undefined
     }
 
-    userDB.senha = ""
+    const userDB = (q.rows as any[])[0]
 
-    if(!userDB.client_id){
-        userDB.client_id = 0
+    return userDB as UserDetail
+
+}
+
+
+const getUserByHash = async (hash:string):Promise<UserDetail|undefined> => {
+
+    const q = await query(`
+            select 
+                user.id as id,
+                user.vtoken as vtoken,
+                user.type as type,
+                user_detail.nome as nome,
+                user_detail.email as email,
+                user_detail.senha as senha,
+                user_client.client_id as client_id
+            from 
+                user
+            join
+                user_detail on user_detail.user_id = user.id 
+            join 
+                user_device on user_device.user_id = user.id
+            left join 
+                user_client on user.id = user_client.user_id
+
+            where user_device.hash_device = ?
+        `, [hash])
+
+    if(q.error || (q.rows as any[]).length == 0) {
+        return undefined
     }
+
+    const userDB = (q.rows as any[])[0]
 
     return userDB as UserDetail
 
@@ -153,6 +241,20 @@ const deleteUser = async (user_id:number) => {
     }
 
     if((await multi.execute(`
+        delete from user_device where user_id = ${user_id}
+    `)).error){
+        multi.rollBack()
+        return false
+    }
+
+    if((await multi.execute(`
+        delete from user_code where user_id = ${user_id}
+    `)).error){
+        multi.rollBack()
+        return false
+    }
+
+    if((await multi.execute(`
         delete from user where id = ${user_id}
     `)).error){
         multi.rollBack()
@@ -202,6 +304,125 @@ const getUserById = async (user_id:number):Promise<User|UserDetail|undefined> =>
 
 }
 
+const saveCodeUser = async (code:string, user_id:number) => {
+
+    const createin = new Date()
+    const expirein = createin.getTime() + (3600000 * 1)
+    const created  = createin.toISOString().slice(0, 19).replace('T', ' ')
+    const expired  = new Date(expirein).toISOString().slice(0, 19).replace('T', ' ')
+
+    return !(await execute(`
+        insert into user_code (user_id, create_at, expire_in, code)
+        values (?,?,?,?)
+        `, [user_id, created, expired, code])).error
+
+}
 
 
-export default { getUserByEmailAndPass, saveUserClient, deleteUser, saveUserAdmin, getUserById }
+const consumeCode =  async (code:string, user_id:number) => {
+
+    const mult  = await multiTransaction()
+    const agora = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    if((await mult.query(`
+            select id from user_code 
+            where 
+                user_id = ? and code = ? 
+                and expire_in > ?
+                and used = 0
+        `, [user_id, code, agora])).error){
+            await mult.rollBack()
+            return false
+        }
+
+    if((await mult.execute(`
+            update user_code set used = 1
+            where user_id = ?
+        `, [user_id])).error){
+            await mult.rollBack()
+            return false
+        }
+
+    if((await mult.execute(`
+            update user set vtoken = vtoken + 1 
+            where id = ?
+        `, [user_id])).error){
+            await mult.rollBack()
+            return false
+        }
+
+    if((await mult.execute(`
+            delete from user_device where user_id = ?
+        `, [user_id])).error){
+            await mult.rollBack()
+            return false
+        }
+    
+    await mult.finish()
+    return true
+
+}
+
+
+const updatePass = async (user_id:number, newpass:string):Promise<boolean> => {
+
+    const multi = await multiTransaction()
+
+    const q = await multi.query(`
+            select 
+                user.id as id,
+                user.vtoken as vtoken,
+                user.type as type,
+                user_detail.id as user_detail_id,
+                user_detail.nome as nome,
+                user_detail.email as email,
+                user_detail.senha as senha,
+                user_client.client_id as client_id
+            from 
+                user
+            join
+                user_detail on user_detail.user_id = user.id 
+            left join 
+                user_client on user.id = user_client.user_id
+            where
+                user.id = '${user_id}'
+
+    `)
+
+    if(q.error || (q.rows as any[]).length == 0) {
+        await multi.rollBack()
+        return false
+    }
+
+    const userDB = (q.rows as any[])[0]
+
+    const npass = await password.encriptPass(newpass)    
+
+    const q2 = await multi.execute(`
+            update user_detail set senha = ?
+            where id = ?
+        `, [npass, userDB.user_detail_id])
+
+    if(q2.error){
+        await multi.rollBack()
+        return false
+    }
+
+    await multi.finish()
+    return true
+
+}
+
+
+export default { 
+    getUserByEmailAndPass, 
+    saveUserClient, 
+    deleteUser, 
+    saveUserAdmin, 
+    getUserById, 
+    getUserByHash, 
+    saveCodeUser, 
+    consumeCode, 
+    getUserByEmail,
+    updatePass
+}
