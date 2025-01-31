@@ -12,6 +12,39 @@ create table if not exists user (
 ) ENGINE=InnoDB;
 
 
+create table if not exists user_code (
+    
+    id bigint not null auto_increment,
+    user_id bigint not null,
+    create_at datetime not null,
+    expire_in datetime not null,
+    code varchar(100) not null,
+    used int(1) not null default 0,
+
+    foreign key(user_id)
+        references user(id),
+
+    primary key(id)
+
+) ENGINE=InnoDB;
+
+
+create table if not exists user_device (
+
+    id bigint not null auto_increment,
+    user_id bigint not null,
+    device varchar(255) not null,
+    ip varchar(255) not null,
+    hash_device varchar(255) not null,
+
+    foreign key(user_id)
+        references user(id),
+
+    primary key(id)
+
+) ENGINE=InnoDB;
+
+
 create table if not exists user_detail (
    
     id bigint not null auto_increment,
