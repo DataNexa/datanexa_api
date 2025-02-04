@@ -1,18 +1,18 @@
 import { Express, Request, Response} from "express"
 import filesRoutes from "./files.routes"
+import authRoutes from "./auth.route"
 import globals from "../app/globals"
+import testsRoutes from "./tests.route"
+
+
 
 export default (app:Express) => {
 
     if(!globals.production){
-        app.get('/test', (req:Request, res:Response) => {
-            res.send({
-                user:res.user,
-                body:req.body
-            })
-        })
+        app.use('/tests', testsRoutes())
     }
-
+    
+    app.use('/auth', authRoutes())
     app.use('/files', filesRoutes())
 
     return app

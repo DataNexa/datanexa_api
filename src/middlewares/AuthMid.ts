@@ -20,7 +20,7 @@ const authMid = async (req:Request, res:Response, next:NextFunction) => {
         next()
         return
     }
-    
+
     const data = await UserFactory.factory(token)
     res.user = data.user
     res.token = data.token

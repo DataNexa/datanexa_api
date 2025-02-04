@@ -16,7 +16,7 @@ const generateUserToken = async (user:User, expire_horas:number = 10) => {
     return JWT.generate(
         {
             alg:'sha256', 
-            type:1, 
+            type:user.type, 
             expire_in: (new Date()).getTime() + (3600000 * expire_horas)
         },
         user

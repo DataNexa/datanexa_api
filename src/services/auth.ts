@@ -36,7 +36,7 @@ export default {
             })
         }
 
-        const user = userRepo.getUserByEmailAndPass(email, senha, userAgent, clientIp)
+        const user = await userRepo.getUserByEmailAndPass(email, senha, userAgent, clientIp)
 
         if(!user){
             return response(res, {
