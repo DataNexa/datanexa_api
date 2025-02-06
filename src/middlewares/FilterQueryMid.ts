@@ -8,13 +8,16 @@ export const filterQueryMid = (req: Request, res: Response, next: NextFunction) 
 
     const parsedQuery: FilterQuery = {
         filters: {},
+        fields:[],
         sort: [],
         ignoredParams: [],
         limit:10,
         offset:0,
-        search:''
+        search:'',
+        client_id:0,
+        desc:true
     };
-  
+    
     Object.keys(query).forEach((key) => {
    
         if (key.startsWith('filter(') && key.endsWith(')')) {
@@ -34,6 +37,11 @@ export const filterQueryMid = (req: Request, res: Response, next: NextFunction) 
         } else if (key === 'search'){
             const searchValue = decodeURIComponent(query[key] as string);
             parsedQuery[key] = transform(searchValue)
+        } else if (key === 'client_id' && query[key]) {
+            parsedQuery[key] = parseInt(query[key] as string) || 0
+        } else if (key === 'fields') {
+            const fieldsArr = (query[key] as string).split(",").map(val => val.trim())
+            parsedQuery[key] = fieldsArr
         } else {
             parsedQuery.ignoredParams.push(key);
         }

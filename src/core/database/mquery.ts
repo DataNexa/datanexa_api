@@ -149,13 +149,13 @@ const insertOnce = async (query:string, binds:any[] = []):Promise<QueryResponseL
     try {
 
         let [result, metadata] = await mysqli.execute(query, binds)
-
+    
         return {
             error:false,
             rows:result,
             error_code:0,
             error_message:'',
-            lastInsertId: (metadata as any).insertId 
+            lastInsertId: (result as any).insertId 
         }
    
     } catch (e) {

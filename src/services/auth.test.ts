@@ -1,6 +1,5 @@
 
 import request from 'supertest'
-import auth from './auth'
 import { UserDetail, User } from '../types/User'
 import JWT from '../core/auth/JWT'
 import init from '../app/init'
@@ -193,7 +192,7 @@ jest.mock("../core/auth/UserFactory", () => {
             return JWT.generate(
                 {
                     alg:'sha256', 
-                    type:1, 
+                    type:user.type, 
                     expire_in: (new Date()).getTime() + (3600000 * expire_horas)
                 },
                 user
@@ -205,7 +204,7 @@ jest.mock("../core/auth/UserFactory", () => {
 
 describe("Teste do serviço auth.js", () => {
     
-    test('Teste com a rota de login com email que não existe', async () => {
+    test('LOGIN: Teste com a rota de login com email que não existe', async () => {
 
         const app = await init("2.0");
 
@@ -220,7 +219,7 @@ describe("Teste do serviço auth.js", () => {
 
     }),
 
-    test('Teste com a rota de login com email que existe', async () => {
+    test('LOGIN:  Teste com a rota de login com email que existe', async () => {
 
         const app = await init("2.0");
 
@@ -233,6 +232,88 @@ describe("Teste do serviço auth.js", () => {
         
         expect(res.statusCode).toBe(200); 
         //expect(res.body).toHaveProperty('token'); 
+
+    })
+
+    test("OPEN SESSION: ", async () => {
+
+        const app = await init("2.0");
+
+        const req1 = await request(app)
+        .get('/auth/openSession') 
+        .set("Authorization", `Open hash1`)
+
+        const req2 = await request(app)
+        .get('/auth/openSession') 
+        .set("Authorization", `Error hash1`)
+
+        const req3 = await request(app)
+        .get('/auth/openSession') 
+        .set("Authorization", `Open hash100`)
+        
+        expect(req1.statusCode).toBe(200); 
+        expect(req2.statusCode).toBe(401); 
+        expect(req3.statusCode).toBe(401); 
+
+    })
+
+    test("GEN CODE: ", async () => {
+        
+        const app = await init("2.0");
+
+        const req1 = await request(app)
+        .post('/auth/genCode')
+        .send({email:'andrei@email.com'})
+
+        const req2 = await request(app)
+        .post('/auth/genCode')
+        .send({email:'naoexiste@email.com'})
+        
+        expect(req1.statusCode).toBe(200); 
+        expect(req2.statusCode).toBe(404); 
+
+    })
+
+
+    test("CONSUME CODE: ", async () => {
+
+        const app = await init("2.0");
+
+        const req1 = await request(app)
+        .post('/auth/consumeCode')
+        .send({email:'andrei@email.com', code:'ACODE1'})
+
+        const req2 = await request(app)
+        .post('/auth/consumeCode')
+        .send({email:'andrei10@email.com', code:'ACODE1'})
+
+        expect(req1.statusCode).toBe(200); 
+        expect(req2.statusCode).toBe(404); 
+
+    })
+
+    test("UPDATE PASS: ",  async () => {
+
+        const app = await init("2.0");
+
+        const req1 = await request(app)
+        .post('/auth/updatePass')
+        .set("Authorization", `Bearer 1`)
+        .send({newPass:'novasenhaForte12'})
+
+        const req2 = await request(app)
+        .post('/auth/updatePass')
+        .set("Authorization", `Bearer 1`)
+        .send({newPass:'senhafraca'})
+
+        const req3 = await request(app)
+        .post('/auth/updatePass')
+        .set("Authorization", `Bearer 1`)
+
+
+        expect(req1.statusCode).toBe(200); 
+        expect(req2.statusCode).toBe(400); 
+        expect(req3.statusCode).toBe(400); 
 
     })
 

@@ -89,7 +89,7 @@ export default {
 
         const { email } = req.body
         const user = await userRepo.getUserByEmail(email)
-
+        
         if(!user){
             return response(res, {
                 code: 404,
@@ -97,21 +97,16 @@ export default {
             })
         }
 
-        if(res.user.id != user.id){
-            return response(res, {
-                code: 401,
-                message:"Não autorizado"
-            })
-        }
-
         const code = JWT.generateRandomCode(6)
 
         if(!await userRepo.saveCodeUser(code, user.id)){
             return response(res, {
-                code: 400,
+                code: 500,
                 message:"Erro ao tentar gerar o código"
             })
         }
+
+        // envia por e-mail
 
         response(res, {
             code:200,
@@ -143,14 +138,6 @@ export default {
                 message:"Usuário não encontrado"
             })
         }
-
-        if(res.user.id != user.id){
-            return response(res, {
-                code: 401,
-                message:"Não autorizado"
-            })
-        }
-
 
         if(!await userRepo.consumeCode(code, user.id)){
             return response(res, {
@@ -190,10 +177,9 @@ export default {
         if(!await userRepo.updatePass(res.user.id, newPass)){
             return response(res, {
                 code: 500,
-                message:"Erro ao tentar salvar a nova senha. Verifique se a senha antiga está correta."
+                message:"Erro ao tentar salvar a nova senha."
             })
         }
-
 
         response(res)
 

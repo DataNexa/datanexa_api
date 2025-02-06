@@ -24,6 +24,10 @@ export default {
         
         const clientId = req.body.client_id || req.query.client_id;
 
+        if(res.user.type == 0){ 
+            return response(res, { code: 401 });
+        }
+
         if (!clientId && res.user.type > 0) {
             return next()
         }

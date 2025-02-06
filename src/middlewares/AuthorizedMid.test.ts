@@ -280,6 +280,36 @@ describe("teste do middleware authorized que verifica se o usuário tem permiss�
 
     })
 
+    test("Se ele não tiver um client_id nos parâmetros, ou se o client_id não for numerico", async () => {
+        
+        const token_client = JWT.generate(
+            {
+                alg:'sha256', 
+                type:1, 
+                expire_in: (new Date()).getTime() + (3600000 * 10) // 10 horas de expiração
+            },
+            {
+                id:1,
+                vtoken:1,
+                type:1
+            }
+        )
+
+        const app = await init('2.0')
+        const request1 = await request(app).get('/tests/onlyValidUser?client_id=2').set('Authorization', `Bearer ${token_client}`)
+        const request2 = await request(app).get('/tests/onlyValidUser?client_id=a').set('Authorization', `Bearer ${token_client}`)
+        const request3 = await request(app).get('/tests/onlyValidUser?client_id=_1').set('Authorization', `Bearer ${token_client}`)
+        const request4 = await request(app).get('/tests/onlyValidUser').set('Authorization', `Bearer ${token_client}`)
+
+        const request5 = await request(app).get('/tests/onlyValidUser')
+
+        expect(request1.statusCode).toBe(401)
+        expect(request2.statusCode).toBe(400)
+        expect(request3.statusCode).toBe(400)
+        expect(request4.statusCode).toBe(200)
+        expect(request5.statusCode).toBe(401)
+
+    })
 
 
 })

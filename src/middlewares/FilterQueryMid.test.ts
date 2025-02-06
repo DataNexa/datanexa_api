@@ -4,7 +4,7 @@ import init from '../app/init'
 import { Request, Response, NextFunction } from 'express'
 import UserFactory from '../core/auth/UserFactory'
 
-jest.mock('./AuthMid', () => {
+jest.mock('./UserFactoryMid', () => {
     return (req:Request, res:Response, next:NextFunction) => {
         res.user = UserFactory.AnonUser
         req.body.token = ''
@@ -62,11 +62,16 @@ describe("Teste do middleware FilterQuery", () => {
     test("Testando rota com offset: /tests/default?offset=", async () => {
         
         const app = await init('2.0')
-        const requestO = await request(app)
+        const request1 = await request(app)
         .get('/tests/default?offset=')
 
-        expect(typeof requestO.body.body.parsedQuery.offset).toBe('number');
-        expect(requestO.body.body.parsedQuery.offset).toBe(0)
+        expect(typeof request1.body.body.parsedQuery.offset).toBe('number');
+        expect(request1.body.body.parsedQuery.offset).toBe(0)
+
+        const request2 = await request(app)
+        .get('/tests/default?offset=100')
+
+        expect(request2.body.body.parsedQuery.offset).toBe(100)
 
     })
 
@@ -125,6 +130,60 @@ describe("Teste do middleware FilterQuery", () => {
 
     })
 
+    test("Testando rota com client_id: /tests/default?client_id=???", async () => {
+
+        const app = await init('2.0')
+        
+        const request1 = await request(app)
+        .get('/tests/default?client_id=a,b')
+
+        const request2 = await request(app)
+        .get('/tests/default?client_id=1')
+
+        const request3 = await request(app)
+        .get('/tests/default?client_id=1o')
+
+        const request4 = await request(app)
+        .get('/tests/default?client_id=12')
+
+        expect(request1.body.body.parsedQuery.client_id)
+        .toEqual(0)
+
+        expect(request2.body.body.parsedQuery.client_id)
+        .toEqual(1)
+
+        expect(request3.body.body.parsedQuery.client_id)
+        .toEqual(1)
+
+        expect(request4.body.body.parsedQuery.client_id)
+        .toEqual(12)
+
+    })
+
+
+    test("Testando rota com parâmetro de fields: /tests/default?fields=a,b", async () => {
+
+        const app = await init('2.0')
+
+        const request1 = await request(app)
+        .get('/tests/default?fields=a,b')
+
+        const request2 = await request(app)
+        .get('/tests/default?fields=a ,   b')
+
+        const request3 = await request(app)
+        .get('/tests/default?fields=palavra composta , palavra2, palavra3')
+
+        expect(request1.body.body.parsedQuery.fields)
+        .toEqual(['a','b'])
+
+        expect(request2.body.body.parsedQuery.fields)
+        .toEqual(['a','b'])
+
+        expect(request3.body.body.parsedQuery.fields)
+        .toEqual(['palavra composta','palavra2', 'palavra3'])
+
+    })
 
 
 })
