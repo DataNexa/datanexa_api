@@ -1,4 +1,4 @@
-import { query, insertOnce, execute } from "../core/database/mquery"
+import { query, insertOnce, execute, multiTransaction } from "../core/database/mquery"
 import { FilterQuery } from "../types/FilterQuery"
 import { Monitoramento } from "../types/Monitoramento"
 
@@ -62,7 +62,7 @@ export default {
 
     },
 
-    update: async (monitoramento:Monitoramento) => {
+    update: async (client_id:number, monitoramento:Monitoramento) => {
 
         const campos = Object.keys(monitoramento)
         let execstr = `update monitoramento set `
@@ -72,7 +72,7 @@ export default {
             execstr += `${campo} = ?, ` 
         }
         execstr = execstr.substring(0, execstr.length -2)+' '
-        execstr += `where id = ${monitoramento.id}`
+        execstr += `where id = ${monitoramento.id} and client_id = ${client_id}`
 
         const mon = monitoramento as {[key:string]:any}
 
@@ -100,11 +100,34 @@ export default {
     },
 
 
-    del: async (id:number) => {
-        
-        const res = await execute(`delete from monitoramento where id = ? `, [id])
-        return !res.error
+    del: async (client_id:number, id:number) => {
+    
+        const multi = await multiTransaction()
 
+        const res1 = await multi.execute(`delete from publish where monitoramento_id = ? and client_id = ?`, [id, client_id])
+
+        if(!res1.error){
+            await multi.rollBack()
+            return false
+        }
+
+        const res2 = await multi.execute(`delete from mensao where monitoramento_id = ? and client_id = ?`, [id, client_id])
+
+        if(!res2.error){
+            await multi.rollBack()
+            return false
+        }
+
+        const res3 = await multi.execute(`delete from monitoramento where id = ? and client_id = ?`, [id, client_id])
+
+        if(!res3.error){
+            await multi.rollBack()
+            return false
+        }
+
+        await multi.finish()
+        return true
+         
     }
 
 

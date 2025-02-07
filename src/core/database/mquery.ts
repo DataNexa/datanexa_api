@@ -226,5 +226,4 @@ const execute = async (query:string, binds:any[] = []):Promise<QueryResponse> =>
 }
 
 
-
 export { query , execute, insertOnce, multiTransaction, MultiTransaction } 

@@ -64,7 +64,7 @@ describe("Testes do repositorio de Monitoramentos", () => {
 
         monit.descricao = "outra descricao"
 
-        expect(await monitoramentoRepo.update(monit)).toBe(true)
+        expect(await monitoramentoRepo.update(parsedQuery.client_id, monit)).toBe(true)
         
         const query = JSON.parse(JSON.stringify(parsedQuery));
 
@@ -100,7 +100,7 @@ describe("Testes do repositorio de Monitoramentos", () => {
 
         if(monitoramentos)
             for(const monit of monitoramentos){
-                if(!await monitoramentoRepo.del(monit.id)){
+                if(!await monitoramentoRepo.del(parsedQuery.client_id, monit.id)){
                     status = false
                 }
             }

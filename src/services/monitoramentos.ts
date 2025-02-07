@@ -1,20 +1,47 @@
 import { Request, Response } from 'express'
 import { body, validationResult } from 'express-validator'
-import { UserDetail } from '../types/User'
 import response from '../util/response'
 import monitoramentoRepo from '../repositories/monitoramento.repo'
-
+import { Monitoramento } from '../types/Monitoramento'
+import { FilterQuery } from '../types/FilterQuery'
 
 export default {
 
-    list: async (req:Request, res:Response) => {
 
-        const client_id = req.body.parsedQuery.client_id
+    read: async (req:Request, res:Response) => {
 
-        if(client_id == 0) {
-            return response(res, { code: 400, message:'O parâmetro client_id é requerido' })
+        const id = parseInt(req.params.id) || 0
+
+        if(id == 0 || Number.isNaN(id)) {
+            return response(res, { code: 400, message:'O parâmetro id é requerido' })
         }
 
+        const parsed = req.body.parsedQuery as FilterQuery
+        parsed.filters['id'] = id
+
+        const monitoramentos = await monitoramentoRepo.get(parsed)
+
+        if(!monitoramentos){
+            return response(res, {
+                code: 500,
+                message: 'Ocorreu um erro inesperado no servidor'
+            })
+        }
+
+        if(monitoramentos.length == 1){
+            return response(res, {
+                code:200,
+                body:monitoramentos[0]
+            })
+        }
+
+        response(res, { code: 404, message:'Monitoramento não encontrado'})
+
+    },
+
+
+    list: async (req:Request, res:Response) => {
+        
         const monitoramentos = await monitoramentoRepo.get(req.body.parsedQuery)
 
         if(!monitoramentos){
@@ -25,10 +52,90 @@ export default {
 
     },
 
+
     update: async (req:Request, res:Response ) => {
 
         const client_id = req.body.parsedQuery.client_id
 
+        await body('id').isInt().trim().run(req)
+        await body('titulo').isString().trim().run(req)
+        await body('descricao').isString().trim().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request - Campos Faltando"
+            })
+        }
+
+        const { id, titulo, descricao } = req.body
+        const monitoramento:Monitoramento = { id, titulo, descricao }
+
+        if(!await monitoramentoRepo.update(client_id, monitoramento)){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar editar monitoramento"
+            })
+        }
+
+        response(res, { code:200 })
+
+    },
+
+
+    create: async (req:Request, res:Response) => {
+
+        const client_id = req.body.parsedQuery.client_id
+
+        await body('titulo').isString().trim().run(req)
+        await body('descricao').isString().trim().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request - Campos Faltando"
+            })
+        }
+
+        const { titulo, descricao } = req.body
+        const monitoramento:Monitoramento = { id:0, titulo, descricao }
+
+        const monitFinal = await monitoramentoRepo.set(client_id, monitoramento)
+
+        if(!monitFinal){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar criar monitoramento"
+            }) 
+        }
+
+        response(res, {
+            code:200,
+            body: monitFinal
+        })
+
+    },
+
+
+    delete: async (req:Request, res:Response) => {
+
+        const client_id = req.body.parsedQuery.client_id
+        const id = parseInt(req.params.id) || 0
+
+        if(id == 0 || Number.isNaN(id)) {
+            return response(res, { code: 400, message:'O parâmetro id é requerido' })
+        }
+
+        if(!await monitoramentoRepo.del(client_id, id)){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar deletar monitoramento"
+            }) 
+        }
+
+        response(res, { code:200 })
+
     }
+
 
 }
