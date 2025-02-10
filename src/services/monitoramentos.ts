@@ -3,7 +3,6 @@ import { body, validationResult } from 'express-validator'
 import response from '../util/response'
 import monitoramentoRepo from '../repositories/monitoramento.repo'
 import { Monitoramento } from '../types/Monitoramento'
-import { FilterQuery } from '../types/FilterQuery'
 
 export default {
 
@@ -16,7 +15,7 @@ export default {
             return response(res, { code: 400, message:'O parâmetro id é requerido' })
         }
 
-        const parsed = req.body.parsedQuery as FilterQuery
+        const parsed = req.parsedQuery
         parsed.filters['id'] = id
 
         const monitoramentos = await monitoramentoRepo.get(parsed)
@@ -42,7 +41,7 @@ export default {
 
     list: async (req:Request, res:Response) => {
         
-        const monitoramentos = await monitoramentoRepo.get(req.body.parsedQuery)
+        const monitoramentos = await monitoramentoRepo.get(req.parsedQuery)
 
         if(!monitoramentos){
             return response(res, { code: 400, message: 'Erro na requisição'})
@@ -55,7 +54,7 @@ export default {
 
     update: async (req:Request, res:Response ) => {
 
-        const client_id = req.body.parsedQuery.client_id
+        const client_id = req.parsedQuery.client_id
 
         await body('id').isInt().trim().run(req)
         await body('titulo').isString().trim().run(req)
@@ -85,7 +84,7 @@ export default {
 
     create: async (req:Request, res:Response) => {
 
-        const client_id = req.body.parsedQuery.client_id
+        const client_id = req.parsedQuery.client_id
 
         await body('titulo').isString().trim().run(req)
         await body('descricao').isString().trim().run(req)
@@ -119,7 +118,7 @@ export default {
 
     delete: async (req:Request, res:Response) => {
 
-        const client_id = req.body.parsedQuery.client_id
+        const client_id = req.parsedQuery.client_id
         const id = parseInt(req.params.id) || 0
 
         if(id == 0 || Number.isNaN(id)) {

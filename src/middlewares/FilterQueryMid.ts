@@ -4,6 +4,12 @@ import transform from '../util/SearchTransform';
 
 export const filterQueryMid = (req: Request, res: Response, next: NextFunction) => {
 
+    var client_id: number = Number(req.body.client_id || parseInt(req.query.client_id as string) || 0)
+
+    if(Number.isNaN(client_id)){
+        client_id = 0
+    }
+
     const { query } = req;
 
     const parsedQuery: FilterQuery = {
@@ -14,7 +20,7 @@ export const filterQueryMid = (req: Request, res: Response, next: NextFunction) 
         limit:10,
         offset:0,
         search:'',
-        client_id:0,
+        client_id:client_id,
         desc:true
     };
     
@@ -37,8 +43,6 @@ export const filterQueryMid = (req: Request, res: Response, next: NextFunction) 
         } else if (key === 'search'){
             const searchValue = decodeURIComponent(query[key] as string);
             parsedQuery[key] = transform(searchValue)
-        } else if (key === 'client_id' && query[key]) {
-            parsedQuery[key] = parseInt(query[key] as string) || 0
         } else if (key === 'fields') {
             const fieldsArr = (query[key] as string).split(",").map(val => val.trim())
             parsedQuery[key] = fieldsArr
@@ -48,7 +52,7 @@ export const filterQueryMid = (req: Request, res: Response, next: NextFunction) 
 
     });
   
-    req.body.parsedQuery = parsedQuery;
+    req.parsedQuery = parsedQuery;
   
     next();
 

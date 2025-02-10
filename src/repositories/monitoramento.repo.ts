@@ -1,11 +1,24 @@
 import { query, insertOnce, execute, multiTransaction } from "../core/database/mquery"
+import queryBuilder from "../core/database/queryBuilder"
+import { DatabaseMap } from "../types/DatabaseMap"
 import { FilterQuery } from "../types/FilterQuery"
 import { Monitoramento } from "../types/Monitoramento"
+
 
 const fields:{[key:string]:string} = {
     id:'monitoramento.id',
     titulo:'monitoramento.titulo',
     descricao:'monitoramento.descricao'
+}
+
+const mapDatabase:DatabaseMap = {
+    table:'monitoramento',
+    fields:fields,
+    join:['>client'],
+    fieldsSerch:{
+        titulo:'monitoramento.titulo',
+        escricao:'monitoramento.descricao'
+    }
 }
 
 const defaultMonitoramento:Monitoramento = {
@@ -19,35 +32,9 @@ export default {
 
     get: async (filter:FilterQuery):Promise<Monitoramento[]|undefined> => {
 
-        let qstring = `SELECT `
+        const dataQuery = queryBuilder(mapDatabase, filter)
 
-        qstring += (filter.fields.length === 0) 
-        ? `${Object.values(fields).join(', ')} ` 
-        : `${fields.id} as id, ${filter.fields.filter(fld => fld !== 'id' && fields[fld]).map(fld => fields[fld]).join(', ')} `;
-
-        qstring += `FROM monitoramento JOIN client ON client.id = monitoramento.client_id WHERE client.id = ${filter.client_id} `;
-
-        if(filter.filters['id']){
-            const id = parseInt(filter.filters['id'])
-            if (!isNaN(id)) {
-                qstring += `AND monitoramento.id = ${id} `;
-            }
-        }
-
-        if (filter.sort.length > 0) {
-            const validSortFields = filter.sort.filter(sort => fields[sort]);
-            if (validSortFields.length > 0) {
-                qstring += `ORDER BY ${validSortFields.map(sort => fields[sort]).join(', ')} `;
-            }
-        } else {
-            qstring += `ORDER BY ${fields.id} `;
-        }
-
-        qstring += filter.desc ? `DESC ` : `ASC `
-        
-        qstring += `LIMIT ${filter.offset}, ${filter.limit}`
-
-        const res = await query(qstring)
+        const res = await query(dataQuery.query, dataQuery.values)
 
         if(res.error){
             return undefined
@@ -101,26 +88,29 @@ export default {
 
 
     del: async (client_id:number, id:number) => {
-    
+        
         const multi = await multiTransaction()
 
         const res1 = await multi.execute(`delete from publish where monitoramento_id = ? and client_id = ?`, [id, client_id])
 
-        if(!res1.error){
+        if(res1.error){
+            console.log("erro1:", res1);
             await multi.rollBack()
             return false
         }
 
         const res2 = await multi.execute(`delete from mensao where monitoramento_id = ? and client_id = ?`, [id, client_id])
 
-        if(!res2.error){
+        if(res2.error){
+            console.log("erro2:", res2);
             await multi.rollBack()
             return false
         }
 
         const res3 = await multi.execute(`delete from monitoramento where id = ? and client_id = ?`, [id, client_id])
 
-        if(!res3.error){
+        if(res3.error){
+            console.log("erro3:", res3);
             await multi.rollBack()
             return false
         }

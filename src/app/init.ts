@@ -4,12 +4,21 @@ import UserFactoryMid from "../middlewares/UserFactoryMid";
 import routes from "../routes/routes";
 import cors from 'cors';
 import { filterQueryMid } from "../middlewares/FilterQueryMid";
+import { FilterQuery } from "../types/FilterQuery";
 
 declare global{
     namespace Express {
         interface Response {
             user: User,
             token?:string
+        }
+    }
+}
+
+declare global{
+    namespace Express {
+        interface Request {
+            parsedQuery:FilterQuery
         }
     }
 }

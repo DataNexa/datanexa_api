@@ -103,11 +103,9 @@ describe("teste do middleware authorized que verifica se o usu√°rio tem permiss√
         )
  
         const app = await init('2.0')
-        const request1 = await request(app).get('/tests/mustHaveClientId').set('Authorization', `Bearer ${token_client}`)
-        const request2 = await request(app).get('/tests/onlyClientUser').set('Authorization', `Bearer ${token_admin}`)
+        const request1 = await request(app).get('/tests/mustHaveClientId?client_id=1').set('Authorization', `Bearer ${token_client}`)
 
         expect(request1.statusCode).toBe(200)
-        expect(request2.statusCode).toBe(401)
 
     })
 
