@@ -1,23 +1,8 @@
 
-interface Monitoramento {
-    hashid:string,
+type Monitoramento = {
+    id:number,
     titulo:string,
-    descricao:string,
-    mensoes:Mensao[]
+    descricao:string
 }
 
-interface Mensao {
-    hashid:string,
-    busca:Search,
-    hashtags:string[]
-}
-
-interface MonitoramentoDetail extends Monitoramento {
-
-}
-
-interface MensaoDetail extends Mensao {
-
-}
-
-export { Monitoramento, Mensao, MonitoramentoDetail, MensaoDetail }
+export { Monitoramento }

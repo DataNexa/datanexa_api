@@ -2,7 +2,7 @@ import { User, UserDetail, user_type } from "../../types/User";
 import { query, insertOnce, multiTransaction, MultiTransaction } from './mquery'
 import UserFactory from "../auth/UserFactory";
 
-async function getUser(user_id:number, client_id?:number):Promise<User> {
+async function getUser(user_id:number, client_id?:number):Promise<User|UserDetail> {
 
     let q = ''
     

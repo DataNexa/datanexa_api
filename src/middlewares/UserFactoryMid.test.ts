@@ -30,7 +30,7 @@ describe("Teste do Middleware de Autenticação gerando um User", () => {
     test("Gerando usuário anônimo quando Bearer Token não é enviado", async () => {
 
         const app = await init('2.0')
-        const requestO = await request(app).get('/test')
+        const requestO = await request(app).get('/tests/default')
 
         expect(requestO.body.user).toEqual({
             vtoken:0,
@@ -57,7 +57,7 @@ describe("Teste do Middleware de Autenticação gerando um User", () => {
         )
 
         const app = await init('2.0')
-        const requestO = await request(app).get('/test').set('Authorization', `${token}`)
+        const requestO = await request(app).get('/tests/default').set('Authorization', `${token}`)
         
         expect(requestO.body.user).toEqual({
             type:0,
@@ -83,7 +83,7 @@ describe("Teste do Middleware de Autenticação gerando um User", () => {
         )
 
         const app = await init('2.0')
-        const requestO = await request(app).get('/test').set('Authorization', `Bearer ${token}`)
+        const requestO = await request(app).get('/tests/default').set('Authorization', `Bearer ${token}`)
         
         expect(requestO.body.user).toEqual({
             type:1,

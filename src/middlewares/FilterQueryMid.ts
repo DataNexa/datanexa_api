@@ -4,17 +4,26 @@ import transform from '../util/SearchTransform';
 
 export const filterQueryMid = (req: Request, res: Response, next: NextFunction) => {
 
+    var client_id: number = Number(req.body.client_id || parseInt(req.query.client_id as string) || 0)
+
+    if(Number.isNaN(client_id)){
+        client_id = 0
+    }
+
     const { query } = req;
 
     const parsedQuery: FilterQuery = {
         filters: {},
+        fields:[],
         sort: [],
         ignoredParams: [],
         limit:10,
         offset:0,
-        search:''
+        search:'',
+        client_id:client_id,
+        desc:true
     };
-  
+    
     Object.keys(query).forEach((key) => {
    
         if (key.startsWith('filter(') && key.endsWith(')')) {
@@ -34,13 +43,16 @@ export const filterQueryMid = (req: Request, res: Response, next: NextFunction) 
         } else if (key === 'search'){
             const searchValue = decodeURIComponent(query[key] as string);
             parsedQuery[key] = transform(searchValue)
+        } else if (key === 'fields') {
+            const fieldsArr = (query[key] as string).split(",").map(val => val.trim())
+            parsedQuery[key] = fieldsArr
         } else {
             parsedQuery.ignoredParams.push(key);
         }
 
     });
   
-    req.body.parsedQuery = parsedQuery;
+    req.parsedQuery = parsedQuery;
   
     next();
 
