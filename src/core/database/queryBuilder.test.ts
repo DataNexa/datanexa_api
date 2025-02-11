@@ -38,7 +38,7 @@ describe("Testes na criação de querys com QueryBUilder", () => {
 
         const query = queryBuilder(mapDatabase, parsedCopy)
 
-        expect(query.query).toBe('SELECT monitoramentos.id as id, monitoramentos.titulo , client.id as client_id, user.id as user_id FROM monitoramentos JOIN client ON client.id = monitoramentos.client_id  ORDER BY monitoramentos.descricao ASC LIMIT 10, 20')
+        expect(query.query).toBe('SELECT monitoramentos.id as id, monitoramentos.titulo as titulo , client.id as client_id, user.id as user_id FROM monitoramentos JOIN client ON client.id = monitoramentos.client_id  ORDER BY monitoramentos.descricao ASC LIMIT 10, 20')
         expect(query.values).toEqual([])
 
     })
@@ -80,7 +80,7 @@ describe("Testes na criação de querys com QueryBUilder", () => {
 
         const query = queryBuilder(mapDatabase, parsedCopy)
         
-        expect(query.query).toBe('SELECT monitoramentos.id as id, monitoramentos.titulo , client.id as client_id, user.id as user_id FROM monitoramentos JOIN client ON client.monitoramentos_id = monitoramentos.id  WHERE monitoramentos.id = ? AND monitoramentos.titulo = ?  AND WHERE (monitoramentos.titulo LIKE ? OR monitoramentos.descricao LIKE ?) AND ((monitoramentos.titulo LIKE ? OR monitoramentos.descricao LIKE ?) OR (monitoramentos.titulo LIKE ? OR monitoramentos.descricao LIKE ?)) AND (monitoramentos.titulo NOT LIKE ? AND monitoramentos.descricao NOT LIKE ?) AND (monitoramentos.titulo NOT LIKE ? AND monitoramentos.descricao NOT LIKE ?)ORDER BY monitoramentos.descricao ASC LIMIT 10, 20')
+        expect(query.query).toBe('SELECT monitoramentos.id as id, monitoramentos.titulo as titulo , client.id as client_id, user.id as user_id FROM monitoramentos JOIN client ON client.monitoramentos_id = monitoramentos.id  WHERE monitoramentos.id = ? AND monitoramentos.titulo = ?  AND WHERE (monitoramentos.titulo LIKE ? OR monitoramentos.descricao LIKE ?) AND ((monitoramentos.titulo LIKE ? OR monitoramentos.descricao LIKE ?) OR (monitoramentos.titulo LIKE ? OR monitoramentos.descricao LIKE ?)) AND (monitoramentos.titulo NOT LIKE ? AND monitoramentos.descricao NOT LIKE ?) AND (monitoramentos.titulo NOT LIKE ? AND monitoramentos.descricao NOT LIKE ?)ORDER BY monitoramentos.descricao ASC LIMIT 10, 20')
         expect(query.values).toEqual([
             1,             'olamundo',
             '%palavra 1%', '%palavra 1%',

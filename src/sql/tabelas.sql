@@ -157,6 +157,7 @@ create table if not exists hashtag_publish (
     id bigint not null auto_increment,
     client_id bigint not null,
     publish_id bigint not null,
+    valor varchar(255),
 
     foreign key (client_id)
         references client(id),
@@ -169,3 +170,15 @@ create table if not exists hashtag_publish (
 ) ENGINE = InnoDB;
 
 
+create table if not exists hashtags (
+
+    id bigint not null auto_increment,
+    mensao_id bigint not null,
+    valor varchar(255),
+
+    foreign key (mensao_id)
+        references mensao(id),
+
+    primary key(id)
+
+) ENGINE = InnoDB;

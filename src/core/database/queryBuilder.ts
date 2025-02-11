@@ -74,8 +74,8 @@ export default (map: DatabaseMap, filter: FilterQuery): { query: string, values:
     const vals: any = []
 
     qstring += (filter.fields.length === 0)
-        ? `${Object.values(fields).join(', ')} `
-        : `${fields.id} as id, ${filter.fields.filter(fld => fld !== 'id' && fields[fld]).map(fld => fields[fld]).join(', ')} `
+        ? `${Object.keys(fields).map(key => `${fields[key]} as ${key}`).join(', ')} `
+        : `${fields.id} as id, ${filter.fields.filter(fld => fld !== 'id' && fields[fld]).map(fld => `${fields[fld]} as ${fld}`).join(', ')} `
 
     qstring += map.otherFields && map.otherFields.length > 0 ? `, ${map.otherFields.join(', ')} ` : ''
 
