@@ -66,7 +66,7 @@ const joinBuilder = (table: string, joins: string[]) => {
     return strjoin;
 };
 
-export default (map: DatabaseMap, filter: FilterQuery): { query: string, values: any[] } => {
+export default (map: DatabaseMap, filter: FilterQuery): { query: string, values: any[] } | false => {
     
     let qstring = `SELECT `
     const fields = map.fields ?? {}
@@ -88,10 +88,13 @@ export default (map: DatabaseMap, filter: FilterQuery): { query: string, values:
         whereStats = true
 
         for (const fild of Object.keys(filter.filters)) {
-            if (map.fields[fild]) {
-                vals.push(filter.filters[fild])
-                qstring += `${map.fields[fild]} = ? AND `
+            if (!map.fields[fild]) {
+                console.log(`O campo: ${fild} não está sendo referenciado no map:DatabaseMap em fields`);
+                
+                return false
             }
+            vals.push(filter.filters[fild])
+            qstring += `${map.fields[fild]} = ? AND `
         }
 
         qstring = qstring.substring(0, qstring.length - 4)
@@ -117,6 +120,9 @@ export default (map: DatabaseMap, filter: FilterQuery): { query: string, values:
     qstring += filter.desc ? `DESC ` : `ASC `
 
     qstring += `LIMIT ${filter.offset}, ${filter.limit}`
+
+    console.log(qstring);
+    
 
     return { query: qstring, values: vals }
 };

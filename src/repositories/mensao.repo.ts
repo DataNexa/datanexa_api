@@ -35,6 +35,8 @@ export default {
 
         const dataQuery = queryBuilder(mapDatabase, filter)
 
+        if(!dataQuery) return undefined
+
         const res = await query(dataQuery.query, dataQuery.values)
 
         if(res.error) return undefined
@@ -76,9 +78,9 @@ export default {
 
         mensao.id = resp.lastInsertId
 
-        for(let hashtag in mensao.hashtags){
+        for(let hashtag of mensao.hashtags){
 
-            const resp2 = await multi.execute('insert into hashtags (mensao_id, valor) values (?,?)', [mensao.id, hashtag])
+            const resp2 = await multi.execute('insert into hashtags (mensao_id, client_id, valor) values (?,?,?)', [mensao.id, client_id, hashtag])
 
             if(resp2.error) {
                 await multi.rollBack()
@@ -94,15 +96,18 @@ export default {
 
     update: async (mensao:Mensao, client_id:number) => {
 
-        let execstr = updateBuild(mensao, "mensao", ["id", "client_id"]);
+        let execstr = updateBuild(mensao, "mensao", ["id", "client_id"], ['hashtags']);
 
         const men = mensao as {[key:string]:any}
 
         const values = Object.keys(mensao)
-            .filter(key => key !== "id" && men[key] !== undefined)
+            .filter(key => key !== "id" && key !== "hashtags" && men[key] !== undefined)
             .map(key => men[key]);
 
+        values.push(mensao.id, client_id)
+
         let res = await execute(execstr, values)
+
         return !res.error
 
     }, 

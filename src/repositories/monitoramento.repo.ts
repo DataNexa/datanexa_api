@@ -34,6 +34,8 @@ export default {
 
         const dataQuery = queryBuilder(mapDatabase, filter)
 
+        if(!dataQuery) return undefined
+
         const res = await query(dataQuery.query, dataQuery.values)
 
         if(res.error){
@@ -67,7 +69,7 @@ export default {
 
     },
 
-    set: async (client_id:number, monitoramento:Monitoramento) => {
+    set: async (client_id:number, monitoramento:Monitoramento):Promise<false|Monitoramento> => {
 
         const res = await insertOnce(`insert into monitoramento (client_id, titulo, descricao) values (?,?,?)`, [client_id, monitoramento.titulo, monitoramento.descricao])
         

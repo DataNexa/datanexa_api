@@ -174,10 +174,14 @@ create table if not exists hashtags (
 
     id bigint not null auto_increment,
     mensao_id bigint not null,
+    client_id bigint not null,
     valor varchar(255),
 
     foreign key (mensao_id)
         references mensao(id),
+
+    foreign key (client_id)
+        references client(id),
 
     primary key(id)
 
