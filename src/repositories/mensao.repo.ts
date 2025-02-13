@@ -94,7 +94,7 @@ export default {
 
     },
 
-    update: async (mensao:Mensao, client_id:number) => {
+    update: async (mensao:Mensao, client_id:number):Promise<boolean> => {
 
         let execstr = updateBuild(mensao, "mensao", ["id", "client_id"], ['hashtags']);
 
@@ -112,7 +112,7 @@ export default {
 
     }, 
 
-    del: async (client_id:number, id:number) => {
+    del: async (client_id:number, id:number):Promise<boolean> => {
 
         const multi = await multiTransaction()
 

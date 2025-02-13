@@ -17,6 +17,7 @@ export default {
 
         const parsed = req.parsedQuery
         parsed.filters['id'] = id
+        parsed.filters['client_id'] = req.parsedQuery.client_id
 
         const monitoramentos = await monitoramentoRepo.get(parsed)
 
@@ -41,6 +42,7 @@ export default {
 
     list: async (req:Request, res:Response) => {
         
+        req.parsedQuery.filters['client_id'] = req.parsedQuery.client_id
         const monitoramentos = await monitoramentoRepo.get(req.parsedQuery)
 
         if(!monitoramentos){
@@ -77,7 +79,7 @@ export default {
             })
         }
 
-        response(res, { code:200 })
+        response(res)
 
     },
 
@@ -119,21 +121,19 @@ export default {
     delete: async (req:Request, res:Response) => {
 
         const client_id = req.parsedQuery.client_id
-        const id = parseInt(req.params.id) || 0
+        const id = Number(req.params.id) || 0
 
         if(id == 0 || Number.isNaN(id)) {
             return response(res, { code: 400, message:'O parâmetro id é requerido' })
         }
 
-        if(!await monitoramentoRepo.del(client_id, id)){
-            return response(res, {
+        await monitoramentoRepo.del(client_id, id) ?
+            response(res) :
+            response(res, {
                 code: 500,
                 message:"Server Error - Erro ao tentar deletar monitoramento"
             }) 
-        }
-
-        response(res, { code:200 })
-
+        
     }
 
 

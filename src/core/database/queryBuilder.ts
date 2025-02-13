@@ -121,8 +121,5 @@ export default (map: DatabaseMap, filter: FilterQuery): { query: string, values:
 
     qstring += `LIMIT ${filter.offset}, ${filter.limit}`
 
-    console.log(qstring);
-    
-
     return { query: qstring, values: vals }
 };
