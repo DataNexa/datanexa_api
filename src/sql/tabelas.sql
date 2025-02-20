@@ -125,6 +125,8 @@ create table if not exists mensao (
 create table if not exists publish (
     
     id bigint not null auto_increment,
+    data_pub datetime not null,
+    texto text not null,
     plataforma ENUM('GOOGLE', 'FACEBOOK', 'INSTAGRAM', 'TWITTER', 'YOUTUBE') not null,
     client_id bigint not null,
     mensao_id bigint not null,
