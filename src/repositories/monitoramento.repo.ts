@@ -3,7 +3,7 @@ import queryBuilder from "../core/database/queryBuilder"
 import { DatabaseMap } from "../types/DatabaseMap"
 import { FilterQuery } from "../types/FilterQuery"
 import { Monitoramento } from "../types/Monitoramento"
-
+import updateBuild from "../core/database/updateBuild"
 
 const fields:{[key:string]:string} = {
     id:'monitoramento.id',
@@ -17,7 +17,7 @@ const mapDatabase:DatabaseMap = {
     join:['>client'],
     fieldsSerch:{
         titulo:'monitoramento.titulo',
-        escricao:'monitoramento.descricao'
+        descricao:'monitoramento.descricao'
     }
 }
 
@@ -33,6 +33,8 @@ export default {
     get: async (filter:FilterQuery):Promise<Monitoramento[]|undefined> => {
 
         const dataQuery = queryBuilder(mapDatabase, filter)
+
+        if(!dataQuery) return undefined
 
         const res = await query(dataQuery.query, dataQuery.values)
 
@@ -51,29 +53,23 @@ export default {
 
     update: async (client_id:number, monitoramento:Monitoramento) => {
 
-        const campos = Object.keys(monitoramento)
-        let execstr = `update monitoramento set `
+        let execstr = updateBuild(monitoramento, "monitoramento", ["id", "client_id"]);
 
-        for(const campo of campos){
-            if(campo != "id")
-            execstr += `${campo} = ?, ` 
-        }
-        execstr = execstr.substring(0, execstr.length -2)+' '
-        execstr += `where id = ${monitoramento.id} and client_id = ${client_id}`
+        const mon = monitoramento as { [key: string]: any };
 
-        const mon = monitoramento as {[key:string]:any}
+        const values = Object.keys(monitoramento)
+            .filter(key => key !== "id" && mon[key] !== undefined)
+            .map(key => mon[key]);
 
-        const values = await (Object.keys(monitoramento) as Array<keyof typeof monitoramento>)
-        .filter(key => key !== 'id')
-        .map(key => mon[key])
-        .filter(value => value !== undefined);
+            
+        values.push(monitoramento.id, client_id);
 
-        let res = await execute(execstr, values)
-        return !res.error
+        let res = await execute(execstr, values);
+        return !res.error;
 
     },
 
-    set: async (client_id:number, monitoramento:Monitoramento) => {
+    set: async (client_id:number, monitoramento:Monitoramento):Promise<false|Monitoramento> => {
 
         const res = await insertOnce(`insert into monitoramento (client_id, titulo, descricao) values (?,?,?)`, [client_id, monitoramento.titulo, monitoramento.descricao])
         

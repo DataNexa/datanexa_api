@@ -2,7 +2,7 @@ import { Search } from "./Search"
 
 type FilterQuery = {
 
-    filters:{[key:string]},
+    filters:{[key:string]:any},
     fields:string[],
     sort:string[],
     limit:number,

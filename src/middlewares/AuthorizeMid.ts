@@ -20,6 +20,14 @@ export default {
         }
     },
 
+    onlyBotUser: (req:Request, res:Response, next:NextFunction) => {
+        if(res.user.type == 3){
+            next()
+        } else {
+            response(res, { code: 401 })
+        }
+    },
+
     onlyValidUser: (req:Request, res:Response, next:NextFunction) => {
         
         const clientId = req.body.client_id || req.query.client_id;

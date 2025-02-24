@@ -66,7 +66,7 @@ const joinBuilder = (table: string, joins: string[]) => {
     return strjoin;
 };
 
-export default (map: DatabaseMap, filter: FilterQuery): { query: string, values: any[] } => {
+export default (map: DatabaseMap, filter: FilterQuery): { query: string, values: any[] } | false => {
     
     let qstring = `SELECT `
     const fields = map.fields ?? {}
@@ -74,8 +74,8 @@ export default (map: DatabaseMap, filter: FilterQuery): { query: string, values:
     const vals: any = []
 
     qstring += (filter.fields.length === 0)
-        ? `${Object.values(fields).join(', ')} `
-        : `${fields.id} as id, ${filter.fields.filter(fld => fld !== 'id' && fields[fld]).map(fld => fields[fld]).join(', ')} `
+        ? `${Object.keys(fields).map(key => `${fields[key]} as ${key}`).join(', ')} `
+        : `${fields.id} as id, ${filter.fields.filter(fld => fld !== 'id' && fields[fld]).map(fld => `${fields[fld]} as ${fld}`).join(', ')} `
 
     qstring += map.otherFields && map.otherFields.length > 0 ? `, ${map.otherFields.join(', ')} ` : ''
 
@@ -88,10 +88,13 @@ export default (map: DatabaseMap, filter: FilterQuery): { query: string, values:
         whereStats = true
 
         for (const fild of Object.keys(filter.filters)) {
-            if (map.fields[fild]) {
-                vals.push(filter.filters[fild])
-                qstring += `${map.fields[fild]} = ? AND `
+            if (!map.fields[fild]) {
+                console.log(`O campo: ${fild} não está sendo referenciado no map:DatabaseMap em fields`);
+                
+                return false
             }
+            vals.push(filter.filters[fild])
+            qstring += `${map.fields[fild]} = ? AND `
         }
 
         qstring = qstring.substring(0, qstring.length - 4)
