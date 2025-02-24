@@ -25,6 +25,7 @@ const dbmensoes:{[key:number]:Mensao} = {
 var lastid = 3
 
 
+
 jest.mock('../middlewares/AuthorizeMid.ts', () => {
     return {
         onlyClientUser:jest.fn((req:Request, res:Response, next:NextFunction) => {
@@ -34,6 +35,9 @@ jest.mock('../middlewares/AuthorizeMid.ts', () => {
             next()
         }),
         onlyValidUser:jest.fn((req:Request, res:Response, next:NextFunction) => {
+            next()
+        }),
+        onlyBotUser:jest.fn((req:Request, res:Response, next:NextFunction) => {
             next()
         }),
         isNotAnon:jest.fn((req:Request, res:Response, next:NextFunction) => {

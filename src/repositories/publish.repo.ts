@@ -7,8 +7,9 @@ import updateBuild from "../core/database/updateBuild";
 
 const fields:{[key:string]:string} = {
     id:'publish.id',
+    texto:'publish.texto',
     plataforma:'publish.plataforma',
-    data_pub:'publish.data_pub',
+    dataPublish:'publish.data_pub',
     link:'publish.link',
     temImagem:'publish.temImagem',
     temVideo:'publish.temVideo',
@@ -27,7 +28,7 @@ const defaultPublish:PublishClient = {
     cliente_id:0,
     mensao_id:0,
     id:0,
-    plataforma:0,
+    plataforma:1,
     link:'',
     texto:'',
     sentimento:0,
@@ -72,6 +73,9 @@ export default {
     set: async (pub:PublishClient):Promise<PublishClient|false> => {
 
         const res = await insertOnce(`insert into publish (
+                monitoramento_id,
+                mensao_id,
+                client_id,
                 plataforma,
                 link,
                 texto,
@@ -83,7 +87,10 @@ export default {
                 compartilhamento,
                 sentimento,
                 valoracao
-            ) values (?,?,?,?,?,?,?,?,?,?,?)`, [
+            ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+                pub.monitoramento_id,
+                pub.mensao_id,
+                pub.cliente_id,
                 pub.plataforma, 
                 pub.link, 
                 pub.texto, 
@@ -151,7 +158,7 @@ export default {
                 compartilhamento,
                 sentimento,
                 valoracao
-            ) values ${pubs.map(() => '(?, ?)').join(', ')}`
+            ) values ${pubs.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')}`
 
         const binds = pubs.flatMap(pub => [
             pub.monitoramento_id,
@@ -174,27 +181,10 @@ export default {
 
     },
 
-    del: async (options:{client_id?:number, monitoramento_id?:number, mensao_id?:number}|number):Promise<boolean> => {
+    del: async (client_id:number, id?:number):Promise<boolean> => {
 
-        var q = `delete from publish where `
-
-        q += typeof(options) == 'number' ? 
-            `id = ${options}` :
-            ((options) => {
-                let str = ``
-                if(options.client_id){
-                    str += `client_id = ${options.client_id}`
-                }
-                if(options.monitoramento_id){
-                    str += `monitoramento_id = ${options.monitoramento_id}`
-                }
-                if(options.monitoramento_id){
-                    str += `mensao_id = ${options.mensao_id}`
-                }
-                return str
-            })(options);
-
-        
+        var q = id ? `delete from publish where client_id = ${client_id} and id = ${id}` :
+            `delete from publish where client_id = ${client_id}`
         return !(await execute(q)).error
 
     }

@@ -1,6 +1,6 @@
 
 enum Plataforma {
-    GOOGLE, FACEBOOK, INSTAGRAM, TWITTER, YOUTUBE
+    GOOGLE = 1, FACEBOOK = 2, INSTAGRAM = 3, TWITTER = 4, YOUTUBE = 5
 }
 
 interface Publish {
@@ -28,4 +28,4 @@ type engajamento = {
     visualizacoes:number
 }
 
-export { Publish, PublishClient }
+export { Publish, PublishClient, Plataforma }

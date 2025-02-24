@@ -41,7 +41,7 @@ describe("Testes no repositorio de mensoes", () => {
         let mensao = await mensaoRepo.set({
             id:0,
             expressao:'uma expressao qualquer',
-            hashtags:['hashtag1', 'hashtag2']
+            hashtags:[]
         }, client.id, monit.id) as Mensao
 
         mensao_id = mensao.id            

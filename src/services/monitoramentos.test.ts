@@ -28,6 +28,9 @@ jest.mock('../middlewares/AuthorizeMid.ts', () => {
         onlyValidUser:jest.fn((req:Request, res:Response, next:NextFunction) => {
             next()
         }),
+        onlyBotUser:jest.fn((req:Request, res:Response, next:NextFunction) => {
+            next()
+        }),
         isNotAnon:jest.fn((req:Request, res:Response, next:NextFunction) => {
             next()
         })
