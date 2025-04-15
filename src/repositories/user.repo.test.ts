@@ -8,7 +8,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
 
         await userRepo.deleteUser(92)
 
-        const user = await userRepo.saveUserAdmin("andrei", "andrei@test.com", "senhaforte@123")
+        const user = await userRepo.saveUserAdmin("andrei", "andrei@test.com", '', "senhaforte@123")
 
         expect((typeof user)).toBe("object")
 
@@ -27,7 +27,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
 
         const senhaForte = "senhaforte@123"
 
-        const user = await userRepo.saveUserAdmin("andrei", "andrei@test.com", senhaForte)
+        const user = await userRepo.saveUserAdmin("andrei", "andrei@test.com", '', senhaForte)
         const userDet = user as UserDetail
         const nUser = (await userRepo.getUserByEmailAndPass(userDet.email, senhaForte, "ios", "192.199.111"))?.user as UserDetail
 
@@ -44,7 +44,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
     test("Criar usuário temporário e resgatálo no banco de dados", async () => {
 
         
-        const user = await userRepo.saveUserAdmin("andrei", "andrei@test2.com", "senhaforte@123")
+        const user = await userRepo.saveUserAdmin("andrei", "andrei@test2.com", '', "senhaforte@123")
         const userDet = user as UserDetail 
 
         const userGet = await userRepo.getUserById(userDet.id)
@@ -62,7 +62,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
         const senha = "minhasenha"
         const senhaerrada = "minhasenhaerrada"
 
-        const user  = await userRepo.saveUserAdmin("andrei", "andrei@test.com", senha) as UserDetail
+        const user  = await userRepo.saveUserAdmin("andrei", "andrei@test.com", '', senha) as UserDetail
         const nUser = (await userRepo.getUserByEmailAndPass("andrei@test.com", senhaerrada, 'ios', 'meuipfodase'))?.user as UserDetail
 
         expect(nUser).toBe(undefined)
@@ -77,10 +77,10 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
 
         const email = "andrei@test.com"
 
-        const user1  = await userRepo.saveUserAdmin("andrei", email, "senha") as UserDetail
+        const user1  = await userRepo.saveUserAdmin("andrei", email, '', "senha") as UserDetail
         expect(user1.email).toBe(email)
 
-        const user2 = await userRepo.saveUserAdmin("andrei coelho", email, "outrasenha")
+        const user2 = await userRepo.saveUserAdmin("andrei coelho", email, '', "outrasenha")
         expect(user2).toBe(false)
 
         const status = await userRepo.deleteUser(user1.id)
@@ -93,7 +93,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
 
         const email = "andrei@test.com"
 
-        const user1  = await userRepo.saveUserAdmin("andrei", email, "senha") as UserDetail
+        const user1  = await userRepo.saveUserAdmin("andrei", email, '', "senha") as UserDetail
         expect(user1.email).toBe(email)
 
         const user2 = await userRepo.getUserByEmail(email) as UserDetail
@@ -117,7 +117,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
 
         const senhaForte = "senhaforte@123"
 
-        const user = await userRepo.saveUserAdmin("andrei", "andrei@test.com", senhaForte) as UserDetail
+        const user = await userRepo.saveUserAdmin("andrei", "andrei@test.com", '', senhaForte) as UserDetail
         const DataUser = await userRepo.getUserByEmailAndPass(user.email, senhaForte, "ios", "192.199.111") as { user:UserDetail, hash:string }
 
         const hash = DataUser.hash
@@ -137,7 +137,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
         const email = "andrei@test.com"
         const code  = "AAA111"
 
-        const user1  = await userRepo.saveUserAdmin("andrei", email, "senha") as UserDetail
+        const user1  = await userRepo.saveUserAdmin("andrei", email, '', "senha") as UserDetail
 
         expect(await userRepo.saveCodeUser(code, user1.id)).toBe(true)
 
@@ -154,7 +154,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
         const email = "andrei@test.com"
         const senha = "senhaFraca"
 
-        const user  = await userRepo.saveUserAdmin("andrei", email, senha) as UserDetail
+        const user  = await userRepo.saveUserAdmin("andrei", email, '', senha) as UserDetail
 
         expect(await userRepo.updatePass(user.id, "novasenhaforte")).toBe(true)
         

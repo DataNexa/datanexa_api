@@ -18,6 +18,13 @@ const mockcacheuser:Record<string, User|UserDetail> = {
         nome:"Andrei",
         email:"andrei@email.com",
         client_id:1
+    },
+    "user:4":{
+        vtoken:1,
+        id:4,
+        type:1,
+        nome:"Andrei2",
+        email:"andrei2@email.com"
     }
 
 } 
@@ -222,11 +229,7 @@ describe("UserFacory testes", () => {
                 type:1, 
                 expire_in: (new Date()).getTime() + (3600000 * 2) // expira em 2 horas
             },
-            {
-                id:2,
-                vtoken:2,
-                type:1
-            },
+            mockcacheuser['user:2'],
         )
 
         const user = await UserFactory.factory(token)
@@ -236,6 +239,24 @@ describe("UserFacory testes", () => {
 
         const userDet = user.user as UserDetail
         expect(userDet.client_id).toBe(1)
+
+    })
+
+    test("Recupera um usuário detalhado sem cliente", async () => {
+
+        const token = JWT.generate(
+            {
+                alg:'sha256', 
+                type:1, 
+                expire_in: (new Date()).getTime() + (3600000 * 2) // expira em 2 horas
+            },
+            mockcacheuser['user:4'],
+        )
+
+        const user = await UserFactory.factory(token)
+        expect(user.user).toHaveProperty("nome")
+        expect(user.user).toHaveProperty("email")
+        expect(user.user).not.toHaveProperty("client_id")      
 
     })
 

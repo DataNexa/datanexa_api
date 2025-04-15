@@ -160,6 +160,7 @@ describe("Teste do modulo userDB", () => {
             vtoken:1,
             id:0,
             nome:"Ondina",
+            picture:'',
             email:"ondina@email.com",
             client_id:1
         })
@@ -179,6 +180,7 @@ describe("Teste do modulo userDB", () => {
             vtoken:1,
             id:0,
             nome:"Ondina",
+            picture:'',
             email:"ondina@email.com",
             client_id:1
         })

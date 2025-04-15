@@ -6,6 +6,7 @@ const router = Router()
 
 export default () => {
 
+    router.post('/google', auth.google)
     router.post('/login', auth.login)
     router.get('/openSession', auth.openSession)
     router.post('/genCode', auth.genCode)

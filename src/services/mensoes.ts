@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
 import mensaoRepo from '../repositories/mensao.repo'
 import response from '../util/response'
-import { body, validationResult } from 'express-validator'
+import { body, validationResult } from 'express-validator';
+
 import { Mensao } from '../types/Mensao'
+
 
 export default {
 

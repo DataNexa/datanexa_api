@@ -7,10 +7,17 @@ import { UserDetail, User } from '../../types/User';
 
 export default { 
 
-    generate: function(header:token_header, user:User | UserDetail){
+    generate: function(header:token_header, user:User ){
         
+        const u:User = {
+            type:user.type,
+            vtoken:user.vtoken,
+            id:user.id,
+            client_id:user.client_id
+        } 
+
         const h = Buffer.from(JSON.stringify(header)).toString('base64')
-        const b = Buffer.from(JSON.stringify(user)).toString('base64');
+        const b = Buffer.from(JSON.stringify(u)).toString('base64');
         
         return `${h}.${b}.${crypto.createHmac(header.alg, globals.token_default).update(h+'.'+b).digest('base64')}`
     },
@@ -45,9 +52,11 @@ export default {
     },
 
     generateHash: function(value:string, alg:string='sha256', salt:string = ''):string{
-        const hash = crypto.createHash(alg)
-        hash.update(value+salt)
-        return hash.digest('hex')
+        return crypto
+        .createHash(alg)
+        .update(value)
+        .update(salt)
+        .digest('hex');
     },
 
     cryptPassword: (password: string):Promise<string> =>{

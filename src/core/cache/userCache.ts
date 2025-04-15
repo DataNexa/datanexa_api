@@ -2,7 +2,7 @@ import CacheRedis from "./CacheRedis";
 import { UserDetail, User } from "../../types/User.d";
 
 
-const saveDataUser = async (dataUser:User|UserDetail) => {
+const saveDataUser = async (dataUser:User) => {
     try {
         const redis = CacheRedis.getInstance()
         const redisClient = redis.getClient();

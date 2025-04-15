@@ -8,13 +8,14 @@ enum user_type {
 interface User {
     type:user_type,
     vtoken:number,
-    id:number
+    id:number,
+    client_id?:number
 }
 
 interface UserDetail extends User {
     email:string,
     nome:String,
-    client_id:number
+    picture:string
 }
 
 export { User, UserDetail, user_type }

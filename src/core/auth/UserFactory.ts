@@ -30,7 +30,7 @@ const factory = async (token_str?:string):Promise<{token:string, user:User}> => 
     
     let token = JWT.verify(token_str.trim())
     if(!token) return { token: '', user:AnonUser }
-    
+
     let tokenChecked = await checkTokenAndGetUser(token)
     if(!tokenChecked) return { token: '', user:AnonUser }
 
@@ -48,12 +48,11 @@ const checkTokenAndGetUser = async (token:token):Promise<{token:string, user:Use
     const userC = await userCache.getDataUser(token.data.id)
     let userF:User
 
-    let isInCache = false
+    let isInCache = userC != false
 
     if(userC){
         if(userC.vtoken != token.data.vtoken)
             return false
-        isInCache = true
         userF = userC
     } else {
         const userD = await userDB.getUser(token.data.id)

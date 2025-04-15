@@ -7,7 +7,7 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "test": "npx jest",
-    "test-local":"npx jest --testMatch='**/src/repositories/**/*.test.ts'"
+    "test-local": "npx jest --testMatch='**/src/repositories/**/*.test.ts'"
   },
   "author": "Andrei Coelho",
   "license": "ISC",
@@ -34,9 +34,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.19.2",
-    "express-validator": "^7.1.0",
+    "express-validator": "^7.2.1",
     "firebase": "^11.2.0",
     "ioredis": "^5.4.2",
+    "jose": "^6.0.10",
     "mysql": "^2.18.1",
     "mysql2": "^3.9.8",
     "nodemailer": "^6.9.14",

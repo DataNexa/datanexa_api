@@ -9,6 +9,7 @@ const usersDataBase:UserDetail[] = [
         type:1,
         id:1,
         vtoken:1,
+        picture:'',
         email:'andrei@email.com',
         nome:'andrei',
         client_id:1
@@ -17,6 +18,7 @@ const usersDataBase:UserDetail[] = [
         type:2,
         id:2,
         vtoken:2,
+        picture:'',
         email:'gustavo@email.com',
         nome:'gustavo',
         client_id:0
@@ -25,11 +27,28 @@ const usersDataBase:UserDetail[] = [
         type:1,
         id:3,
         vtoken:1,
+        picture:'',
         email:'luiz@email.com',
         nome:'luiz',
         client_id:1
+    },
+    {
+        type:1,
+        id:4,
+        vtoken:1,
+        picture:'',
+        email:'luiz2@email.com',
+        nome:'luiz 2'
     }
 ]
+
+jest.mock("../core/auth/GoogleValidation", () => {
+    return {
+        tokenValidation:jest.fn(async (token:string) => {
+            return false
+        })
+    }
+})
 
 
 jest.mock("../core/auth/UserFactory", () => {
@@ -82,11 +101,7 @@ describe("teste do middleware authorized que verifica se o usuário tem permiss�
                 type:1, 
                 expire_in: (new Date()).getTime() + (3600000 * 10) // 10 horas de expiração
             },
-            {
-                id:1,
-                vtoken:1,
-                type:1
-            }
+            usersDataBase[0]
         )
 
         const token_admin = JWT.generate(
@@ -95,19 +110,27 @@ describe("teste do middleware authorized que verifica se o usuário tem permiss�
                 type:2, 
                 expire_in: (new Date()).getTime() + (3600000 * 10) // 10 horas de expiração
             },
+            usersDataBase[1]
+        )
+
+        const token_user_no_client = JWT.generate(
             {
-                id:2,
-                vtoken:2,
-                type:2
-            }
+                alg:'sha256', 
+                type:1, 
+                expire_in: (new Date()).getTime() + (3600000 * 10) // 10 horas de expiração
+            },
+            usersDataBase[3]
         )
  
         const app = await init('2.0')
         const request1 = await request(app).get('/tests/onlyClientUser').set('Authorization', `Bearer ${token_client}`)
         const request2 = await request(app).get('/tests/onlyClientUser').set('Authorization', `Bearer ${token_admin}`)
+        const request3 = await request(app).get('/tests/onlyClientUser').set('Authorization', `Bearer ${token_user_no_client}`)
+
 
         expect(request1.statusCode).toBe(200)
         expect(request2.statusCode).toBe(401)
+        expect(request3.statusCode).toBe(401)
 
     })
 
