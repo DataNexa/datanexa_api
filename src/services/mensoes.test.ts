@@ -4,6 +4,8 @@ import { FilterQuery } from '../types/FilterQuery'
 import { Mensao } from '../types/Mensao'
 import init from '../app/init'
 
+jest.mock('jose');
+
 const dbmensoes:{[key:number]:Mensao} = {
     1:{
         id:1,

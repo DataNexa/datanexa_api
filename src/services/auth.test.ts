@@ -9,6 +9,7 @@ const usersDataBase:UserDetail[] = [
         type:1,
         id:1,
         vtoken:1,
+        picture:'',
         email:'andrei@email.com',
         nome:'andrei',
         client_id:1
@@ -17,6 +18,7 @@ const usersDataBase:UserDetail[] = [
         type:1,
         id:2,
         vtoken:1,
+        picture:'',
         email:'gustavo@email.com',
         nome:'gustavo',
         client_id:1
@@ -25,11 +27,13 @@ const usersDataBase:UserDetail[] = [
         type:1,
         id:3,
         vtoken:1,
+        picture:'',
         email:'luiz@email.com',
         nome:'luiz',
         client_id:1
     }
 ]
+
 
 jest.mock("../repositories/user.repo", () => {
     return {
@@ -52,7 +56,7 @@ jest.mock("../repositories/user.repo", () => {
             }
             return undefined
         }),
-        getUserByHash:jest.fn(async (hash:string) => {
+        getUserByRefreshToken:jest.fn(async (hash:string) => {
             for(const u of usersDataBase){
                 if(`hash${u.id}` == hash){
                     return u
@@ -149,6 +153,7 @@ jest.mock("../core/auth/UserFactory", () => {
             type:1,
             id:1,
             vtoken:1,
+            picture:'',
             email:'andrei@email.com',
             nome:'andrei',
             client_id:1
@@ -157,6 +162,7 @@ jest.mock("../core/auth/UserFactory", () => {
             type:1,
             id:2,
             vtoken:1,
+            picture:'',
             email:'gustavo@email.com',
             nome:'gustavo',
             client_id:1
@@ -165,6 +171,7 @@ jest.mock("../core/auth/UserFactory", () => {
             type:1,
             id:3,
             vtoken:1,
+            picture:'',
             email:'luiz@email.com',
             nome:'luiz',
             client_id:1

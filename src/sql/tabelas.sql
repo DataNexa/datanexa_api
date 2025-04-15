@@ -6,6 +6,7 @@ create table if not exists user (
     vtoken int(11) not null default 0,
     type int(2) not null,
     ativo int(1) not null default 1,
+    create_at datetime not null,
 
     primary key(id)
 
@@ -45,10 +46,26 @@ create table if not exists user_device (
 ) ENGINE=InnoDB;
 
 
+create table if not exists user_refresh_token (
+
+    id bigint not null auto_increment,
+    user_device_id bigint not null,
+    refresh_token varchar(255) not null,
+    active int(1) not null default 1,
+
+    foreign key(user_device_id) 
+        references user_device(id),
+
+    primary key(id)
+
+) ENGINE=InnoDB;
+
+
 create table if not exists user_detail (
    
     id bigint not null auto_increment,
     user_id bigint not null,
+    user_image varchar(255) not null,
     nome varchar(255) not null,
     email varchar(255) not null,
     senha varchar(255) not null,

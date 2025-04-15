@@ -7,8 +7,7 @@ const authMid = async (req:Request, res:Response, next:NextFunction) => {
         res.user = UserFactory.AnonUser
         res.token = ''
         req.body.token = ''
-        next()
-        return
+        return next()
     }
 
     const [type, token] = req.headers.authorization.split(' ')
@@ -17,8 +16,7 @@ const authMid = async (req:Request, res:Response, next:NextFunction) => {
         res.user = UserFactory.AnonUser
         res.token = ''
         req.body.token = ''
-        next()
-        return
+        return next()
     }
 
     const data = await UserFactory.factory(token)

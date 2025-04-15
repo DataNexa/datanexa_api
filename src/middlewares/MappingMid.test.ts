@@ -11,6 +11,7 @@ const usersDataBase:UserDetail[] = [
         vtoken:1,
         email:'andrei@email.com',
         nome:'andrei',
+        picture:'',
         client_id:1
     },
     {
@@ -19,6 +20,7 @@ const usersDataBase:UserDetail[] = [
         vtoken:2,
         email:'gustavo@email.com',
         nome:'gustavo',
+        picture:'',
         client_id:0
     },
     {
@@ -27,6 +29,7 @@ const usersDataBase:UserDetail[] = [
         vtoken:1,
         email:'luiz@email.com',
         nome:'luiz',
+        picture:'',
         client_id:1
     }
 ]

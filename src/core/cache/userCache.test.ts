@@ -4,6 +4,7 @@ import { UserDetail } from "../../types/User";
 const usersDB:Record<string, UserDetail> = {
     "user:1":{
         type:1,
+        picture:'',
         email:'andrei@email.com',
         nome:'andrei',
         id:1,
@@ -12,6 +13,7 @@ const usersDB:Record<string, UserDetail> = {
     },
     "user:2":{
         type:1,
+        picture:'',
         email:'gustavo@email.com',
         nome:'gustavo',
         id:2,

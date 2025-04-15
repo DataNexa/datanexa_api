@@ -5,8 +5,86 @@ import password from '../util/password'
 import userRepo from '../repositories/user.repo'
 import UserFactory from '../core/auth/UserFactory'
 import JWT from '../core/auth/JWT'
+import { tokenValidation } from '../core/auth/GoogleValidation';
+
+interface googlePayLoad { email:string, name:string, sub:string, picture:string, given_name:string }
 
 export default {
+
+    google: async (req:Request, res:Response) => {
+
+        await body('googleToken').isString().trim().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            return response(res, {
+                code: 400,
+                message:"Bad Request - Precisa da credencial do google"
+            })
+        }
+
+        const { googleToken } = req.body
+
+        const data = await tokenValidation(googleToken)
+
+        if(!data) return response(res, {
+            code:500,
+            message: 'Erro ao tentar resgatar informações do google'
+        })
+
+        const gpayload = data as any as googlePayLoad
+        const userByEmail = await userRepo.getUserByEmail(gpayload.email)
+        
+        const clientIp = Array.isArray(req.headers['x-forwarded-for']) 
+            ? req.headers['x-forwarded-for'][0] 
+            : req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'undefined';
+
+        const userAgent = req.headers['user-agent'] || 'undefined';
+
+        if(!userByEmail){
+
+            const userDetail = await userRepo.saveUserClient(gpayload.name, gpayload.picture, gpayload.email, '')
+
+            if(!userDetail) return response(res, {
+                code: 500,
+                message: 'Erro ao tentar salvar o usuário no banco de dados'
+            })
+
+            const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(userDetail.id, gpayload.email, userAgent, clientIp)
+
+            if(!hash){
+                return response(res, {
+                    code: 500,
+                    message: 'Erro ao tentar salvar criar refresh_token'
+                })
+            }
+
+            return response(res, {
+                body:{
+                    user:userDetail,
+                    refresh_token: hash
+                },
+                code:200
+            })
+        }
+
+        const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(userByEmail.id, gpayload.email, userAgent, clientIp)
+
+        if(!hash){
+            return response(res, {
+                code: 500,
+                message: 'Erro ao tentar salvar criar refresh_token'
+            })
+        }
+
+        response(res, {
+            body:{
+                user:userByEmail,
+                refresh_token: hash
+            },
+            code:200
+        })
+
+    },
 
 
     login: async (req:Request, res:Response) => {
@@ -36,6 +114,7 @@ export default {
             })
         }
 
+        
         const user = await userRepo.getUserByEmailAndPass(email, senha, userAgent, clientIp)
 
         if(!user){
@@ -63,7 +142,7 @@ export default {
             return response(res, {code:401}) 
         }
 
-        const user = await userRepo.getUserByHash(hash)
+        const user = await userRepo.getUserByRefreshToken(hash)
 
         if(!user){
             return response(res, {code:401}) 
@@ -170,7 +249,7 @@ export default {
         if(!password.passIsStronger(newPass)){
             return response(res, {
                 code: 400,
-                message:"Bad Request - Senha Inválida"
+                message:"Bad Request - Senha muito fraca"
             })
         }
 

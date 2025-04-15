@@ -16,6 +16,7 @@ const getUserByEmailAndPass = async (email:string, senha:string, device:string, 
                 user.type as type,
                 user_detail.nome as nome,
                 user_detail.email as email,
+                user_detail.user_image as picture,
                 user_detail.senha as senha,
                 user_client.client_id as client_id
             from 
@@ -46,9 +47,19 @@ const getUserByEmailAndPass = async (email:string, senha:string, device:string, 
     const q2 = await multi.insertOnce(`
             insert into user_device (user_id, device, ip, hash_device)
             values (?,?,?,?)
-        `, [userDB.id, device, ip, hash])
-
+        `, [userDB.id, device, ip, ''])
+    
     if(q2.error){
+        await multi.rollBack()
+        return undefined
+    }
+
+    const q3 = await multi.insertOnce(`
+            insert into user_refresh_token (user_device_id, refresh_token) 
+            values (?,?)
+        `, [q2.lastInsertId, hash])
+
+    if(q3.error){
         await multi.rollBack()
         return undefined
     }
@@ -65,6 +76,36 @@ const getUserByEmailAndPass = async (email:string, senha:string, device:string, 
 
 }
 
+const saveDeviceAndGenerateTokenRefresh = async (user_id:number, email:string, device:string, ip:string):Promise<string|undefined> => {
+
+    const multi = await multiTransaction()
+
+    const hash = JWT.generateHash(user_id.toString()+email+device+ip)
+
+    const q2 = await multi.insertOnce(`
+            insert into user_device (user_id, device, ip, hash_device)
+            values (?,?,?,?)
+        `, [user_id, device, ip, ''])
+    
+    if(q2.error){
+        await multi.rollBack()
+        return undefined
+    }
+
+    const q3 = await multi.insertOnce(`
+            insert into user_refresh_token (user_device_id, refresh_token) 
+            values (?,?)
+        `, [q2.lastInsertId, hash])
+
+    if(q3.error){
+        await multi.rollBack()
+        return undefined
+    }
+
+    await multi.finish()  
+    return hash
+}
+
 
 const getUserByEmail = async (email:string):Promise<UserDetail|undefined> => {
     
@@ -75,7 +116,7 @@ const getUserByEmail = async (email:string):Promise<UserDetail|undefined> => {
                 user.type as type,
                 user_detail.nome as nome,
                 user_detail.email as email,
-                user_detail.senha as senha,
+                user_detail.user_image as picture,
                 user_client.client_id as client_id
             from 
                 user
@@ -99,7 +140,7 @@ const getUserByEmail = async (email:string):Promise<UserDetail|undefined> => {
 }
 
 
-const getUserByHash = async (hash:string):Promise<UserDetail|undefined> => {
+const getUserByRefreshToken = async (refresh_token:string):Promise<UserDetail|undefined> => {
 
     const q = await query(`
             select 
@@ -109,6 +150,7 @@ const getUserByHash = async (hash:string):Promise<UserDetail|undefined> => {
                 user_detail.nome as nome,
                 user_detail.email as email,
                 user_detail.senha as senha,
+                user_detail.user_image as picture,
                 user_client.client_id as client_id
             from 
                 user
@@ -116,11 +158,13 @@ const getUserByHash = async (hash:string):Promise<UserDetail|undefined> => {
                 user_detail on user_detail.user_id = user.id 
             join 
                 user_device on user_device.user_id = user.id
+            join 
+                user_refresh_token on user_refresh_token.user_device_id = user_device.id
             left join 
                 user_client on user.id = user_client.user_id
 
-            where user_device.hash_device = ?
-        `, [hash])
+            where user_refresh_token.refresh_token = ?
+        `, [refresh_token])
 
     if(q.error || (q.rows as any[]).length == 0) {
         return undefined
@@ -132,7 +176,7 @@ const getUserByHash = async (hash:string):Promise<UserDetail|undefined> => {
 
 }
 
-const saveUserAdmin = async (nome:string, email:string, senha:string):Promise<UserDetail|false> => {
+const saveUserAdmin = async (nome:string, email:string, image:string, senha:string):Promise<UserDetail|false> => {
 
     const multi = await multiTransaction()
 
@@ -149,9 +193,9 @@ const saveUserAdmin = async (nome:string, email:string, senha:string):Promise<Us
     const senhaEncriptada = await password.encriptPass(senha)
 
     const res2 = await multi.insertOnce(`
-            insert into user_detail (user_id, nome, email, senha) 
-            values (?,?,?,?)       
-        `, [user_id, nome, email, senhaEncriptada])
+            insert into user_detail (user_id, user_image, nome, email, senha) 
+            values (?,?,?,?,?)       
+        `, [user_id, image, nome, email, senhaEncriptada])
 
     if(res2.error){
         await multi.rollBack()
@@ -164,6 +208,7 @@ const saveUserAdmin = async (nome:string, email:string, senha:string):Promise<Us
         client_id:0,
         nome:nome,
         email:email,
+        picture:image,
         type:2,
         vtoken:0,
         id:user_id
@@ -172,7 +217,7 @@ const saveUserAdmin = async (nome:string, email:string, senha:string):Promise<Us
 }
 
 
-const saveUserClient = async (client_id:number, nome:string, email:string, senha:string ):Promise<UserDetail|false> => {
+const saveUserClient = async (nome:string, email:string, image:string, senha:string, client_id:number = 0 ):Promise<UserDetail|false> => {
 
     const multi = await multiTransaction()
 
@@ -189,8 +234,8 @@ const saveUserClient = async (client_id:number, nome:string, email:string, senha
     const senhaEncriptada = await password.encriptPass(senha)
 
     const res2 = await multi.insertOnce(`
-            insert into user_detail (user_id, nome, email, senha) 
-            values (?,?,?,?)       
+            insert into user_detail (user_id, user_image, nome, email, senha) 
+            values (?,?,?,?,?)       
         `, [user_id, nome, email, senhaEncriptada])
 
     if(res2.error){
@@ -198,22 +243,27 @@ const saveUserClient = async (client_id:number, nome:string, email:string, senha
         return false
     }
 
-    const res3 = await multi.insertOnce(`
+    if(client_id > 0){
+
+        const res3 = await multi.insertOnce(`
             insert into user_client (user_id, client_id)
             values (?,?)
         `, [user_id, client_id])
 
-    if(res3.error){
-        await multi.rollBack()
-        return false 
-    }
+        if(res3.error){
+            await multi.rollBack()
+            return false 
+        }
 
+    }
+    
     await multi.finish()
 
     return {
         id:user_id,
         vtoken:0,
         client_id:client_id,
+        picture:image,
         nome:nome,
         email:email,
         type:1
@@ -420,9 +470,10 @@ export default {
     deleteUser, 
     saveUserAdmin, 
     getUserById, 
-    getUserByHash, 
+    getUserByRefreshToken, 
     saveCodeUser, 
     consumeCode, 
     getUserByEmail,
-    updatePass
+    updatePass,
+    saveDeviceAndGenerateTokenRefresh
 }
