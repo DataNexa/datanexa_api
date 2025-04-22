@@ -1,9 +1,10 @@
 
 import JWT from "../core/auth/JWT"
 import { execute, multiTransaction, query } from "../core/database/mquery"
-import { User, UserDetail } from "../types/User"
+import type { User, UserDetail } from "../types/User"
+import factory from '../core/auth/UserFactory'
 import password from "../util/password"
-
+import logdb from "../core/database/logdb"
 
 const getUserByEmailAndPass = async (email:string, senha:string, device:string, ip:string):Promise<{user: UserDetail|undefined, hash:string}|undefined> => {
 
@@ -31,6 +32,7 @@ const getUserByEmailAndPass = async (email:string, senha:string, device:string, 
     `)
 
     if(q.error || (q.rows as any[]).length == 0) {
+        logdb.error(q.error_code, `Tentativa de login com email ${email} e senha ${senha}`, 'user', 'getUserByEmailAndPass')
         await multi.rollBack()
         return undefined
     }
@@ -38,6 +40,7 @@ const getUserByEmailAndPass = async (email:string, senha:string, device:string, 
     const userDB = (q.rows as any[])[0]
 
     if(!await password.comparePass(senha, userDB.senha)){
+        logdb.error(0, `Senha incorreta`, 'user', 'getUserByEmailAndPass')
         await multi.rollBack()
         return undefined
     }
@@ -50,6 +53,7 @@ const getUserByEmailAndPass = async (email:string, senha:string, device:string, 
         `, [userDB.id, device, ip, ''])
     
     if(q2.error){
+        logdb.error(q2.error_code, `Erro ao tentar salvar o device`, 'user', 'getUserByEmailAndPass')
         await multi.rollBack()
         return undefined
     }
@@ -60,6 +64,7 @@ const getUserByEmailAndPass = async (email:string, senha:string, device:string, 
         `, [q2.lastInsertId, hash])
 
     if(q3.error){
+        logdb.error(q3.error_code, `Erro ao tentar salvar o refresh_token`, 'user', 'getUserByEmailAndPass')
         await multi.rollBack()
         return undefined
     }
@@ -220,25 +225,27 @@ const saveUserAdmin = async (nome:string, email:string, image:string, senha:stri
 const saveUserClient = async (nome:string, email:string, image:string, senha:string, client_id:number = 0 ):Promise<UserDetail|false> => {
 
     const multi = await multiTransaction()
-
+    const type = factory.getUserTypeValue('CLIENT')
     const res = await multi.insertOnce(`
-            insert into user (type) values (?)
-        `, [1])
+            insert into user (type, create_at) values (?, ?)
+        `, [ type, new Date() ])
 
     if(res.error){
+        console.log(res.error_message)
         await multi.rollBack()
         return false
     }
-
+    
     const user_id = res.lastInsertId
     const senhaEncriptada = await password.encriptPass(senha)
 
     const res2 = await multi.insertOnce(`
             insert into user_detail (user_id, user_image, nome, email, senha) 
             values (?,?,?,?,?)       
-        `, [user_id, nome, email, senhaEncriptada])
+        `, [user_id, image, nome, email, senhaEncriptada])
 
     if(res2.error){
+        console.log(res2.error_message)
         await multi.rollBack()
         return false
     }
@@ -251,6 +258,7 @@ const saveUserClient = async (nome:string, email:string, image:string, senha:str
         `, [user_id, client_id])
 
         if(res3.error){
+            console.log(res3.error_message)
             await multi.rollBack()
             return false 
         }

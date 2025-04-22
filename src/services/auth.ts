@@ -14,7 +14,7 @@ export default {
     google: async (req:Request, res:Response) => {
 
         await body('googleToken').isString().trim().run(req)
-
+        
         if(!validationResult(req).isEmpty()){
             return response(res, {
                 code: 400,
@@ -26,10 +26,13 @@ export default {
 
         const data = await tokenValidation(googleToken)
 
-        if(!data) return response(res, {
-            code:500,
-            message: 'Erro ao tentar resgatar informações do google'
-        })
+        if(!data) {
+            console.log('Erro ao tentar validar o token do google');
+            return response(res, {
+                code:500,
+                message: 'Erro ao tentar resgatar informações do google'
+            })
+        }
 
         const gpayload = data as any as googlePayLoad
         const userByEmail = await userRepo.getUserByEmail(gpayload.email)
@@ -42,16 +45,21 @@ export default {
 
         if(!userByEmail){
 
-            const userDetail = await userRepo.saveUserClient(gpayload.name, gpayload.picture, gpayload.email, '')
+            const userDetail = await userRepo.saveUserClient(gpayload.name, gpayload.email, gpayload.picture, '')
 
-            if(!userDetail) return response(res, {
-                code: 500,
-                message: 'Erro ao tentar salvar o usuário no banco de dados'
-            })
+            if(!userDetail) {
+                console.log('Erro ao tentar salvar o usuário no banco de dados');
+                
+                return response(res, {
+                    code: 500,
+                    message: 'Erro ao tentar salvar o usuário no banco de dados'
+                })
+            }
 
             const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(userDetail.id, gpayload.email, userAgent, clientIp)
 
             if(!hash){
+                console.log('Erro ao tentar salvar refresh_token');
                 return response(res, {
                     code: 500,
                     message: 'Erro ao tentar salvar criar refresh_token'
@@ -70,6 +78,8 @@ export default {
         const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(userByEmail.id, gpayload.email, userAgent, clientIp)
 
         if(!hash){
+            console.log('Erro ao tentar salvar refresh_token');
+            
             return response(res, {
                 code: 500,
                 message: 'Erro ao tentar salvar criar refresh_token'
