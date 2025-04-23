@@ -3,12 +3,13 @@ import Config from '../../util/config'
 
 const isIntProduction = Config.instance().isInProduction()
 
-const getCookieConfig = (diasDuracao: number):{httpOnly:boolean, sameSite:'lax'|'none', secure:boolean, path:string, maxAge:number } => { 
+const getCookieConfig = (diasDuracao: number):{httpOnly:boolean, sameSite:'lax'|'none'|'strict', secure:boolean, path:string, maxAge:number, domain:string } => { 
     return { 
-        httpOnly: isIntProduction,
-        sameSite: isIntProduction ? 'lax' : 'none',
-        secure: isIntProduction,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
         path: '/',
+        domain: isIntProduction ? '.datanexa.com.br' : 'localhost',
         maxAge: 3600000 * 24 * diasDuracao,
     }
 }

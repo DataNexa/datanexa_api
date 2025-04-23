@@ -6,6 +6,7 @@ import userRepo from '../repositories/user.repo'
 import UserFactory from '../core/auth/UserFactory'
 import JWT from '../core/auth/JWT'
 import { tokenValidation } from '../core/auth/GoogleValidation';
+import cookie from '../core/auth/cookie'
 
 interface googlePayLoad { email:string, name:string, sub:string, picture:string, given_name:string }
 
@@ -66,10 +67,11 @@ export default {
                 })
             }
 
+            cookie.setCookie(res, 'refresh_token', hash)
+
             return response(res, {
                 body:{
-                    user:userDetail,
-                    refresh_token: hash
+                    user:userDetail
                 },
                 code:200
             })
@@ -78,6 +80,7 @@ export default {
         const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(userByEmail.id, gpayload.email, userAgent, clientIp)
 
         if(!hash){
+            
             console.log('Erro ao tentar salvar refresh_token');
             
             return response(res, {
@@ -86,10 +89,11 @@ export default {
             })
         }
 
+        cookie.setCookie(res, 'refresh_token', hash)
+
         response(res, {
             body:{
-                user:userByEmail,
-                refresh_token: hash
+                user:userByEmail
             },
             code:200
         })
@@ -143,16 +147,13 @@ export default {
 
     openSession: async (req:Request, res:Response) => {
 
-        if(!req.headers.authorization){
-            return response(res, {code:401})
-        } 
+        const refresh_token = req.cookies['refresh_token'];
 
-        const [type, hash] = req.headers.authorization.split(' ')
-        if(type != 'Open'){
+        if(!refresh_token){
             return response(res, {code:401}) 
         }
 
-        const user = await userRepo.getUserByRefreshToken(hash)
+        const user = await userRepo.getUserByRefreshToken(refresh_token)
 
         if(!user){
             return response(res, {code:401}) 
