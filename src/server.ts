@@ -4,6 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import https from 'https'
 import Config from "./util/config";
+import Logger from "./util/logger";
 
 const certPath = path.resolve(__dirname, '..')
 
@@ -23,7 +24,7 @@ const app = async () => {
 (
     async () => {
         (await app()).listen(globals.port, () => {
-            console.log(`
+            Logger.info(`
             * ██████╗░░█████╗░████████╗░█████╗░███╗░░██╗███████╗██╗░░██╗░█████╗░ *
             * ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗████╗░██║██╔════╝╚██╗██╔╝██╔══██╗ *
             * ██║░░██║███████║░░░██║░░░███████║██╔██╗██║█████╗░░░╚███╔╝░███████║ *

@@ -7,6 +7,7 @@ import { filterQueryMid } from "../middlewares/FilterQueryMid";
 import { FilterQuery } from "../types/FilterQuery";
 import Config from "../util/config";
 import cookieParser from "cookie-parser";
+import Logger from "../util/logger";
 
 declare global{
     namespace Express {
@@ -25,23 +26,29 @@ declare global{
     }
 }
 
-const allowedOrigins = ['https://localhost:5173'];
+const localhostOrigin = 'https://localhost:5173'
 
 const corsOptions = {
+ 
     origin: (origin: string | undefined, callback: (err: Error | null, allow: boolean) => void) => {
-        if (!origin) {
+        
+        Logger.info(`CORS: ${origin} - ${new Date().toISOString()}`);
+
+        if (!origin) return callback(null, true);
+
+        const isLocalhost = !Config.instance().isInProduction() && origin === localhostOrigin;
+        const isAllowedSubdomain = origin.endsWith('.datanexa.com.br');
+
+        if (isLocalhost || isAllowedSubdomain) {
             return callback(null, true);
         }
-        if (!Config.instance().isInProduction && allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        if (origin.endsWith('.datanexa.com.br')) {
-            return callback(null, true);
-        }
+
         callback(new Error('Not allowed by CORS'), false);
     },
+ 
     credentials: true,
-};
+
+}
 
 export default async (version:string):Promise<Express> => {
 
