@@ -161,6 +161,36 @@ export default {
 
     },
 
+    openSessionUsingSecretToken: async (req:Request, res:Response) => {
+
+        await body('secret_token').isString().trim().run(req)
+
+        if(!validationResult(req).isEmpty()){
+            Logger.error('Campo de secret_token faltando', 'openSessionUsingSecretToken')
+            return response(res, {
+                code: 400,
+                message:"Bad Request - Campos Faltando"
+            })
+        }
+
+        const { secret_token } = req.body
+
+        const user = await userRepo.getUserByRefreshToken(secret_token)
+
+        if(!user){
+            Logger.error('secret_token inválido', 'openSessionUsingSecretToken')
+            return response(res, {
+                code: 401,
+                message:"Not Found - Usuário não encontrado"
+            })
+        }
+
+        const session = await UserFactory.generateUserToken(user)
+
+        response(res, {code:200, body: session})
+
+    },
+
     openSession: async (req:Request, res:Response) => {
 
         const refresh_token = req.cookies['refresh_token'];

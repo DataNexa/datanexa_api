@@ -9,6 +9,7 @@ class Config {
     private static config:Config;
     private conf:{ version:string, production:boolean, configurado:boolean }
     private conf_str:string;
+    private pipeline_user:string;
     private data:{
         port:number,
         token_default:string,
@@ -70,6 +71,8 @@ class Config {
         this.data.smtp_user.user     = process.env.SMTP_USER_EMAIL
         this.data.smtp_user.pass     = process.env.SMTP_USER_PASSWORD
 
+        this.pipeline_user = process.env.PIPELINE_AIRFLOW_DEFAULT_USER ?? ""
+
     }
 
     public static instance(){
@@ -89,6 +92,10 @@ class Config {
 
     public isInProduction(){
         return this.conf.production
+    }
+
+    public getPipelineUser(){
+        return this.pipeline_user
     }
 
     public setConfigured(){

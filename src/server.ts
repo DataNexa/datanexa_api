@@ -5,6 +5,7 @@ import path from 'path'
 import https from 'https'
 import Config from "./util/config";
 import Logger from "./util/logger";
+import install from "./app/install";
 
 const certPath = path.resolve(__dirname, '..')
 
@@ -14,16 +15,28 @@ const options = {
 }
 
 const app = async () => { 
-    return await (
-        !Config.instance().isInProduction() ? 
-        https.createServer(options, await init(globals.version)) :
-        await init(globals.version)
-    )
+   try {
+        await install.install()
+        return await (
+            !Config.instance().isInProduction() ? 
+            https.createServer(options, await init(globals.version)) :
+            await init(globals.version)
+        )
+    } catch (error) {
+        Logger.error(error, 'server')
+        return null
+    }
+    
  };
 
 (
     async () => {
-        (await app()).listen(globals.port, () => {
+        const server = await app()
+        if(!server){
+            Logger.error('Erro ao tentar iniciar servidor', 'server')
+            return
+        }
+        (server).listen(globals.port, () => {
             Logger.info(`
             * ██████╗░░█████╗░████████╗░█████╗░███╗░░██╗███████╗██╗░░██╗░█████╗░ *
             * ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗████╗░██║██╔════╝╚██╗██╔╝██╔══██╗ *

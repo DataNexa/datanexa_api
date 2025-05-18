@@ -5,6 +5,7 @@ import type { User, UserDetail } from "../types/User"
 import factory from '../core/auth/UserFactory'
 import password from "../util/password"
 import logdb from "../core/database/logdb"
+import Logger from "../util/logger"
 
 const getUserByEmailAndPass = async (email:string, senha:string, device:string, ip:string):Promise<{user: UserDetail|undefined, hash:string}|undefined> => {
 
@@ -85,7 +86,7 @@ const saveDeviceAndGenerateTokenRefresh = async (user_id:number, email:string, d
 
     const multi = await multiTransaction()
 
-    const hash = JWT.generateHash(user_id.toString()+email+device+ip)
+    const hash = JWT.generateHash(user_id.toString()+email+device+ip+((new Date()).getTime().toString()))
 
     const q2 = await multi.insertOnce(`
             insert into user_device (user_id, device, ip, hash_device)
@@ -93,6 +94,7 @@ const saveDeviceAndGenerateTokenRefresh = async (user_id:number, email:string, d
         `, [user_id, device, ip, ''])
     
     if(q2.error){
+        Logger.error(q2.error_message, 'saveDeviceAndGenerateTokenRefresh')
         await multi.rollBack()
         return undefined
     }
@@ -103,12 +105,15 @@ const saveDeviceAndGenerateTokenRefresh = async (user_id:number, email:string, d
         `, [q2.lastInsertId, hash])
 
     if(q3.error){
+        Logger.error(q3.error_message, 'saveDeviceAndGenerateTokenRefresh')
         await multi.rollBack()
         return undefined
     }
 
     await multi.finish()  
+    
     return hash
+
 }
 
 
@@ -181,6 +186,50 @@ const getUserByRefreshToken = async (refresh_token:string):Promise<UserDetail|un
 
 }
 
+
+
+
+const saveUserBot = async (nome:string):Promise<UserDetail|false> => { 
+
+    const multi = await multiTransaction()
+
+    const res = await multi.insertOnce(`
+            insert into user (type) values (?)
+        `, [3])
+
+    if(res.error){
+        Logger.error(res.error_message, 'saveUserBot')
+        await multi.rollBack()
+        return false
+    }
+
+    const user_id = res.lastInsertId
+
+    const res2 = await multi.insertOnce(`
+            insert into user_detail (user_id, nome, email, user_image, senha) 
+            values (?,?,?,?,?)       
+        `, [user_id, nome, `${nome}@datanexa.com.br`, 'no-image', 'no-password'])
+
+    if(res2.error){
+        Logger.error(res2.error_message, 'saveUserBot')
+        await multi.rollBack()
+        return false
+    }
+
+    await multi.finish()
+
+    return {
+        client_id:0,
+        nome:nome,
+        email:'',
+        picture:'',
+        type:3,
+        vtoken:0,
+        id:user_id
+    }
+
+}
+
 const saveUserAdmin = async (nome:string, email:string, image:string, senha:string):Promise<UserDetail|false> => {
 
     const multi = await multiTransaction()
@@ -190,6 +239,7 @@ const saveUserAdmin = async (nome:string, email:string, image:string, senha:stri
         `, [2])
 
     if(res.error){
+        Logger.error(res.error_message, 'saveUserAdmin')
         await multi.rollBack()
         return false
     }
@@ -203,6 +253,7 @@ const saveUserAdmin = async (nome:string, email:string, image:string, senha:stri
         `, [user_id, image, nome, email, senhaEncriptada])
 
     if(res2.error){
+        Logger.error(res.error_message, 'saveUserAdmin')
         await multi.rollBack()
         return false
     }
@@ -477,6 +528,7 @@ export default {
     saveUserClient, 
     deleteUser, 
     saveUserAdmin, 
+    saveUserBot,
     getUserById, 
     getUserByRefreshToken, 
     saveCodeUser, 

@@ -6,7 +6,7 @@ create table if not exists user (
     vtoken int(11) not null default 0,
     type int(2) not null,
     ativo int(1) not null default 1,
-    create_at datetime not null,
+    create_at datetime not null DEFAULT CURRENT_TIMESTAMP,
 
     primary key(id)
 
@@ -17,7 +17,7 @@ create table if not exists user_code (
     
     id bigint not null auto_increment,
     user_id bigint not null,
-    create_at datetime not null,
+    create_at datetime not null DEFAULT CURRENT_TIMESTAMP,
     expire_in datetime not null,
     code varchar(100) not null,
     used int(1) not null default 0,

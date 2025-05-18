@@ -172,4 +172,10 @@ async function saveUserDetail(user:UserDetail){
 
 }
 
-export default { saveUserBOT, saveUserDetail, getUserByEmail, getUser, addClientToUser }
+export default { 
+    saveUserBOT, 
+    saveUserDetail, 
+    getUserByEmail, 
+    getUser, 
+    addClientToUser 
+}
