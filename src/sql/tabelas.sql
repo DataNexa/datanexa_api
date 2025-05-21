@@ -115,7 +115,7 @@ create table if not exists monitoramento (
     client_id bigint not null,
     titulo varchar(255) not null,
     descricao varchar(255) not null,
-    create_at datetime not null DEFAULT CURRENT_TIMESTAMP,
+    create_at datetime DEFAULT CURRENT_TIMESTAMP,
     data_inicio datetime,
     data_fim datetime,
     ativo tinyint(1) not null default 1,
@@ -243,6 +243,9 @@ create table if not exists youtube_search_config (
     videoEmbeddable tinyint(1) default 0,
     ytOrder varchar(50) default "date",
     publishAfter datetime,
+    palavrasExatas varchar(255),
+    palavrasQuePodeTer varchar(255),
+    excluirPalavras varchar(255),
     lang varchar(50),
 
     foreign key (client_id)
