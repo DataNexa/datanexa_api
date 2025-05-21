@@ -2,7 +2,7 @@ import { query, insertOnce, execute, multiTransaction } from "../core/database/m
 import queryBuilder from "../core/database/queryBuilder"
 import { DatabaseMap } from "../types/DatabaseMap"
 import { FilterQuery } from "../types/FilterQuery"
-import { Monitoramento } from "../types/Monitoramento"
+import { Monitoramento, MonitoramentoFull } from "../types/Monitoramento"
 import updateBuild from "../core/database/updateBuild"
 
 const fields:{[key:string]:string} = {
@@ -27,8 +27,32 @@ const defaultMonitoramento:Monitoramento = {
     descricao:''
 }
 
+const defaultMonitoramentoFull:MonitoramentoFull = { 
+    id:0,
+    titulo:'',
+    descricao:'',
+    ativo:true,
+    cliente_id:0
+}
+
+
 
 export default {
+
+    getMonitoramentosDeClientesAtivosEConfigs: async ():Promise<MonitoramentoFull[]> => {
+
+        const res = await query(`select monitoramento.*, client.* from monitoramento 
+                inner join client on client.id = monitoramento.client_id
+                left join instagram_search_config on instagram_search_config.monitoramento_id = monitoramento.id
+                left join twitter_search_config on twitter_search_config.monitoramento_id = monitoramento.id
+                left join youtube_search_config on youtube_search_config.monitoramento_id = monitoramento.id
+                left join google_search_config on google_search_config.monitoramento_id = monitoramento.id
+                where client.ativo = 1 and monitoramento.ativo = 1`)
+
+
+        return [defaultMonitoramentoFull]
+    },
+
 
     get: async (filter:FilterQuery):Promise<Monitoramento[]|undefined> => {
 
