@@ -79,6 +79,20 @@ create table if not exists user_detail (
 ) ENGINE=InnoDB;
 
 
+create table if not exists instagram_app (
+    
+    id bigint not null auto_increment,
+    app_id varchar(255) not null,
+    app_secret varchar(255) not null,
+    redirect_uri varchar(255) not null,
+    access_token varchar(255) not null,
+    used tinyint(1) default 0,
+    token_expires_at datetime,
+
+    primary key(id)
+
+) ENGINE=InnoDB;
+
 create table if not exists client (
 
     id bigint not null auto_increment,
@@ -90,6 +104,29 @@ create table if not exists client (
 
 ) ENGINE=InnoDB;
 
+
+create table if not exists client_config (
+
+    id bigint not null auto_increment,
+    client_id bigint not null,
+
+    max_monitoramentos_ativos int(11) not null default 1,
+    instagram_app_id bigint not null,
+
+    foreign key(instagram_app_id)
+        references instagram_app(id),   
+
+    foreign key(client_id)
+        references client(id),
+
+    unique key uq_client_id (client_id),
+
+    primary key(id)
+
+) ENGINE=InnoDB;
+
+create index idx_instagram_app_id on client_config(instagram_app_id);
+create index idx_client_id on client_config(client_id);
 
 create table if not exists user_client (
 
@@ -279,13 +316,22 @@ create table if not exists instagram_search_config_hashtags (
 
     id bigint not null auto_increment,
     instagram_search_config_id bigint not null,
-    hashtag_instagram_id bigint not null,
     hashtag_value varchar(255) not null,
 
     foreign key (instagram_search_config_id)
         references instagram_search_config(id),
+        
+    primary key(id)
 
-    unique key unique_config_hashtag (instagram_search_config_id, hashtag_value),
+) ENGINE = InnoDB;
+
+create table if not exists index_hashtags_instagram (
+
+    id bigint not null auto_increment,
+    hashtag_instagram_id bigint not null,
+    hashtag_value varchar(255) not null,
+    
+    unique key uq_hashtag_value (hashtag_value),
 
     primary key(id)
 

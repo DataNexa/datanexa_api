@@ -27,7 +27,6 @@ type MonitoramentoFull = {
     },
     youtube_search_config?:{
         dork:string,
-        fromUsers:string[],
         videoDuration:string,
         videoDefinition:string,
         videoEmbeddable:boolean,
@@ -45,7 +44,6 @@ type MonitoramentoFull = {
         palavrasExatas:string[],
         palavrasQuePodeTer:string[],
         excluirPalavras:string[],
-        lang:string,
     }
 }
 
