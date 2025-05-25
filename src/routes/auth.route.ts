@@ -12,6 +12,7 @@ export default () => {
     router.post('/genCode', auth.genCode)
     router.post('/consumeCode', auth.consumeCode)
     router.post('/updatePass', AuthorizeMid.onlyValidUser, auth.updatePass)
+    router.post('/openSessionUsingSecretToken', auth.openSessionUsingSecretToken)
     return router
 
 }

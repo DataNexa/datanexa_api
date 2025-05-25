@@ -1,25 +1,23 @@
+import { OAuth2Client } from 'google-auth-library';
 
 const googleClientId = '469439274694-s5qt48a1ja76ilta8kc9echtapn3uel7.apps.googleusercontent.com';
 
-const tokenValidation = async (token:string) => {
+const client = new OAuth2Client(googleClientId);
 
-    const { jwtVerify, createRemoteJWKSet } = await import('jose');
-
-    const JWKS = await createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
-    
+const tokenValidation = async (token: string) => {
     try {
-        const { payload } = await jwtVerify(token, JWKS, {
-            issuer:'https://accounts.google.com',
-            audience:googleClientId
-        })
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: googleClientId,
+        });
 
-        return payload
+        const payload = ticket.getPayload();
+
+        return payload || false;
 
     } catch (error) {
-        return false
+        return false;
     }
+};
 
-}
-
-
-export { tokenValidation }
+export { tokenValidation };

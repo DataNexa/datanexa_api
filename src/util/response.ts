@@ -1,12 +1,13 @@
 import { NextFunction, Response } from 'express'
 import { RequestResponse } from '../types/RequestResponse';
+import Logger from './logger';
 
 
 export default (res: Response, dataResponse: RequestResponse = { code: 200 }, next?: NextFunction) => {
     try {
 
         if (res.headersSent) {
-            console.warn("Os cabeçalhos já foram enviados. A resposta não pode ser modificada.");
+            Logger.error("Cabeçalhos já enviados, não é possível enviar a resposta novamente.", "response");
             return;
         }
 
@@ -22,6 +23,6 @@ export default (res: Response, dataResponse: RequestResponse = { code: 200 }, ne
             next();
         }
     } catch (e) {
-        console.error("Erro ao enviar a resposta:", e);
+        Logger.error(e, "response");
     }
 };

@@ -1,9 +1,9 @@
-import { user_type, User, UserDetail } from "./User"
+import { User, UserDetail } from "./User"
 
 
 type token_header = {
     alg:string,
-    type:user_type,
+    type:number,
     expire_in:number
 }
 

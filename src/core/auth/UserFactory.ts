@@ -5,12 +5,33 @@ import { token } from "../../types/Token";
 import userCache from "../cache/userCache";
 import userDB from "../database/userDB";
 
+enum user_type {
+    ANONIMO = 0, 
+    CLIENT = 1, 
+    ADMIN = 2, 
+    BOT = 3
+}
+
+
 const AnonUser:User = {
-    type:0,
+    type:user_type.ANONIMO,
     vtoken:0,
     id:0
 }
 
+
+type UserTypeKey = keyof typeof user_type;
+type UserTypeValue = (typeof user_type)[UserTypeKey];
+
+const getUserTypeValue = (key: UserTypeKey): number => {
+    return user_type[key];
+}
+
+const getUserTypeKey = (value: UserTypeValue): UserTypeKey | undefined  => {
+    return (Object.keys(user_type) as UserTypeKey[]).find(
+        key => user_type[key] === value
+    );
+}
 
 const generateUserToken = async (user:User, expire_horas:number = 10) => {
     return JWT.generate(
@@ -76,4 +97,4 @@ const checkTokenAndGetUser = async (token:token):Promise<{token:string, user:Use
 }
 
 
-export default { factory, AnonUser, generateUserToken }
+export default { factory, AnonUser, generateUserToken, getUserTypeValue, getUserTypeKey }
