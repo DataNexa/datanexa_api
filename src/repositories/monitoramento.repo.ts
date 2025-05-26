@@ -7,7 +7,7 @@ import updateBuild from "../core/database/updateBuild"
 import Logger from "../util/logger"
 import { ConfigMap, ConfigMapSimple } from "../types/SearchConfig"
 import { OkPacket } from "mysql"
-
+import publishRepo from "./publish.repo"
 
 const fields:{[key:string]:string} = {
     id:'monitoramento.id',
@@ -198,7 +198,7 @@ export default {
                     LEFT JOIN instagram_search_config_hashtags AS ish
                         ON ish.instagram_search_config_id = isc.id   
 
-                    LEFT JOIN indexHashtagsInstagram AS ihi
+                    LEFT JOIN index_hashtags_instagram AS ihi
                         ON ihi.hashtag_instagram_id = ish.id         
 
                     WHERE
@@ -383,6 +383,27 @@ export default {
         
         const multi = await multiTransaction()
 
+        const res0 = await multi.execute(`select id from publish where monitoramento_id = ? and client_id = ?`, [id, client_id])
+
+        if(res0.error){
+            console.log("erro0:", res0);
+            await multi.rollBack()
+            return false
+        }
+
+        const idsHashtagPublish = (res0.rows as any[]).map(r => r.id)
+
+        if(idsHashtagPublish.length > 0){
+            const binds = idsHashtagPublish.map(_ => "?").join(",")
+            const res0Ids = await multi.execute(`delete from publish where id in (${binds})`, idsHashtagPublish)
+            
+            if(res0Ids.error){
+                console.log("erro0Ids:", res0Ids);
+                await multi.rollBack()
+                return false
+            }
+        }
+
         const res1 = await multi.execute(`delete from publish where monitoramento_id = ? and client_id = ?`, [id, client_id])
 
         if(res1.error){
@@ -391,12 +412,42 @@ export default {
             return false
         }
 
-        // deletar os configs  
+        const res2 = await multi.execute(`select id from instagram_search_config_hashtags where instagram_search_config_id = ?`, [id])
+
+        const ids = (res2.rows as any[]).map(r => r.id)
+        
+        if(ids.length > 0){
+           
+            const binds = ids.map(_ => "?").join(",")
+            const res2Ids = await multi.execute(`delete from instagram_search_config_hashtags where id in (${binds})`, ids)
+            
+            if(res2Ids.error){
+                console.log("erro2Ids:", res2Ids);
+                await multi.rollBack()
+                return false
+            }
+
+        }
+
+        const resInstagramDeleteSearchConfig = await multi.execute(`delete from instagram_search_config where monitoramento_id = ? and client_id = ?`, [id, client_id])
+
+        if(resInstagramDeleteSearchConfig.error){
+            console.log("erroInstagramDeleteSearchConfig:", resInstagramDeleteSearchConfig);
+            await multi.rollBack()
+            return false
+        }
+
+        await multi.execute(`delete from twitter_search_config where monitoramento_id = ? and client_id = ?`, [id, client_id])
+        await multi.execute(`delete from youtube_search_config where monitoramento_id = ? and client_id = ?`, [id, client_id])
+        await multi.execute(`delete from google_search_config  where monitoramento_id = ? and client_id = ?`, [id, client_id])
+
+        await publishRepo.deleteByMonitoramentoId(client_id, id)
+        // deletar publicações
 
         const res3 = await multi.execute(`delete from monitoramento where id = ? and client_id = ?`, [id, client_id])
 
         if(res3.error){
-            console.log("erro3:", res3);
+            console.log("erro3:", res3.error_message);
             await multi.rollBack()
             return false
         }
@@ -587,8 +638,9 @@ export default {
                 if(config.instagram_search_config.hashtags){
                     
                     const hashtags = config.instagram_search_config.hashtags.map((h:any) => [res.lastInsertId, h.hashtag_value])
-                    const bindings = hashtags.map((h:any) => "(?,?)")
-                    const res2     = await conn.execute(`insert into instagram_search_config_hashtags (instagram_search_config_id, hashtag_value) values ${bindings}`, [hashtags])
+                    const bindings = hashtags.map((h:any) => "(?,?)").join(",")
+                    
+                    const res2     = await conn.execute(`insert into instagram_search_config_hashtags (instagram_search_config_id, hashtag_value) values ${bindings}`, hashtags.flat())
                     
                     if(res2.error){
                         throw new Error(res2.error_message)
@@ -629,7 +681,7 @@ export default {
                 const res = await conn.insertOnce(`
                     insert into youtube_search_config 
                         (monitoramento_id, client_id, dork, videoDuration, videoDefinition, videoEmbeddable, ytOrder, publishAfter, lang) 
-                    values (?,?,?,?,?,?,?,?,?,?,?,?)`, [
+                    values (?,?,?,?,?,?,?,?,?)`, [
                         monitoramento_id, 
                         client_id,
                         config.youtube_search_config.dork,

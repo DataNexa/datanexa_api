@@ -1,3 +1,21 @@
+SELECT 
+
+    cc.max_monitoramentos_ativos as max_monitoramentos_ativos,
+    (
+        SELECT count(*)
+        FROM monitoramento m
+        WHERE m.ativo = 1
+        AND m.client_id = cc.client_id
+    ) as monitoramentos_ativos
+FROM 
+    cclient_config cc 
+    JOIN client c
+        ON cc.client_id = c.id
+WHERE
+    cc.client_id = ?;
+    
+
+
 SELECT
     
     m.id            AS monitoramento_id,

@@ -2,7 +2,7 @@ import { FilterQuery } from "../types/FilterQuery";
 import { PublishClient } from "../types/Publish";
 import { DatabaseMap } from "../types/DatabaseMap";
 import queryBuilder from "../core/database/queryBuilder";
-import { execute, insertOnce, query } from "../core/database/mquery";
+import { execute, insertOnce, multiTransaction, query } from "../core/database/mquery";
 import updateBuild from "../core/database/updateBuild";
 
 const fields:{[key:string]:string} = {
@@ -179,6 +179,36 @@ export default {
 
         return !(await execute(q, binds)).error
 
+    },
+
+    deleteByMonitoramentoId: async (client_id:number, monitoramento_id:number):Promise<boolean> => {
+        
+        const conn = await multiTransaction()
+
+        try {
+            const res0 = await conn.query(`select id from publish where client_id = ${client_id} and monitoramento_id = ${monitoramento_id}`)
+
+            if(res0.error) 
+                throw new Error(`Erro ao buscar publicações: ${res0.error}`)
+
+            const ids = (res0.rows as any[]).map(row => row.id).join(',')
+            const res1 = await conn.execute(`delete from hashtag where client_id = ${client_id} and publish_id in (${ids})`)
+
+            if(res1.error) 
+                throw new Error(`Erro ao deletar hashtags: ${res1.error}`)
+
+            const res2 = await conn.execute(`delete from publish where client_id = ${client_id} and monitoramento_id = ${monitoramento_id}`)
+            if(res2.error) 
+                throw new Error(`Erro ao deletar publicações: ${res2.error}`)
+
+            await conn.finish()
+            return true
+
+        } catch (error) {
+            await conn.rollBack()
+            return false
+        }
+       
     },
 
     del: async (client_id:number, id?:number):Promise<boolean> => {
