@@ -6,7 +6,7 @@ create table if not exists user (
     vtoken int(11) not null default 0,
     type int(2) not null,
     ativo int(1) not null default 1,
-    create_at datetime not null,
+    create_at datetime not null DEFAULT CURRENT_TIMESTAMP,
 
     primary key(id)
 
@@ -17,7 +17,7 @@ create table if not exists user_code (
     
     id bigint not null auto_increment,
     user_id bigint not null,
-    create_at datetime not null,
+    create_at datetime not null DEFAULT CURRENT_TIMESTAMP,
     expire_in datetime not null,
     code varchar(100) not null,
     used int(1) not null default 0,
@@ -79,15 +79,54 @@ create table if not exists user_detail (
 ) ENGINE=InnoDB;
 
 
-create table if not exists client (
-
+create table if not exists instagram_app (
+    
     id bigint not null auto_increment,
-    nome varchar(255),
+    app_id varchar(255) not null,
+    app_secret varchar(255) not null,
+    redirect_uri varchar(255) not null,
+    access_token varchar(255) not null,
+    used tinyint(1) default 0,
+    token_expires_at datetime,
 
     primary key(id)
 
 ) ENGINE=InnoDB;
 
+create table if not exists client (
+
+    id bigint not null auto_increment,
+    nome varchar(255),
+    ativo tinyint(1) not null default 1,
+    create_at datetime not null DEFAULT CURRENT_TIMESTAMP,
+
+    primary key(id)
+
+) ENGINE=InnoDB;
+
+
+create table if not exists client_config (
+
+    id bigint not null auto_increment,
+    client_id bigint not null,
+
+    max_monitoramentos_ativos int(11) not null default 1,
+    instagram_app_id bigint not null,
+
+    foreign key(instagram_app_id)
+        references instagram_app(id),   
+
+    foreign key(client_id)
+        references client(id),
+
+    unique key uq_client_id (client_id),
+
+    primary key(id)
+
+) ENGINE=InnoDB;
+
+create index idx_instagram_app_id on client_config(instagram_app_id);
+create index idx_client_id on client_config(client_id);
 
 create table if not exists user_client (
 
@@ -111,8 +150,12 @@ create table if not exists monitoramento (
 
     id bigint not null auto_increment,
     client_id bigint not null,
-    titulo varchar(255),
-    descricao varchar(255),
+    titulo varchar(255) not null,
+    descricao varchar(255) not null,
+    create_at datetime DEFAULT CURRENT_TIMESTAMP,
+    data_inicio datetime,
+    data_fim datetime,
+    ativo tinyint(1) not null default 0,
 
     foreign key(client_id)
         references client(id),
@@ -122,23 +165,6 @@ create table if not exists monitoramento (
 ) ENGINE=InnoDB;
 
 
-create table if not exists mensao (
-
-    id bigint not null auto_increment,
-    client_id bigint not null,
-    monitoramento_id bigint not null,
-    expressao varchar(255),
-
-    foreign key (client_id) 
-        references client(id),
-    foreign key (monitoramento_id)
-        references monitoramento(id),
-    
-    primary key(id)
-
-) ENGINE = InnoDB;
-
-
 create table if not exists publish (
     
     id bigint not null auto_increment,
@@ -146,7 +172,6 @@ create table if not exists publish (
     texto text not null,
     plataforma ENUM('GOOGLE', 'FACEBOOK', 'INSTAGRAM', 'TWITTER', 'YOUTUBE') not null,
     client_id bigint not null,
-    mensao_id bigint not null,
     monitoramento_id bigint not null,
     link varchar(255) not null,
     temImagem int(1) not null,
@@ -157,14 +182,13 @@ create table if not exists publish (
     sentimento int(1) not null,
     valoracao decimal(10,2) not null default 0,
 
-    foreign key(mensao_id)
-        references mensao(id),
-    
     foreign key(client_id)
         references client(id),
 
     foreign key(monitoramento_id)
         references monitoramento(id),
+
+    index(plataforma),
     
     primary key(id)
 
@@ -188,19 +212,126 @@ create table if not exists hashtag_publish (
 
 ) ENGINE = InnoDB;
 
+/* CONFIGURAÇÔES DE MONITORAMENTO */
 
-create table if not exists hashtags (
+create table if not exists google_search_config (
 
     id bigint not null auto_increment,
-    mensao_id bigint not null,
     client_id bigint not null,
-    valor varchar(255),
+    monitoramento_id bigint not null,
 
-    foreign key (mensao_id)
-        references mensao(id),
+    dork varchar(255),
+    sites text,
+    noInSites text,
+    inUrl varchar(255),
+    inTitle varchar(255),
+    inText varchar(255),
+    palavrasExatas varchar(255),
+    palavrasQuePodeTer varchar(255),
+    excluirPalavras varchar(255),
 
     foreign key (client_id)
         references client(id),
+
+    foreign key (monitoramento_id)
+        references monitoramento(id),
+
+    primary key(id)
+
+) ENGINE = InnoDB;
+
+
+create table if not exists twitter_search_config (
+
+    id bigint not null auto_increment,
+    client_id bigint not null,
+    monitoramento_id bigint not null,
+
+    dork varchar(255),
+    from_users varchar(255),
+    not_from_users varchar(255),
+    mentions varchar(255),
+    hashtags varchar(255),
+    palavrasExatas varchar(255),
+    palavrasQuePodeTer varchar(255),
+    excluirPalavras varchar(255),
+    lang varchar(255),
+
+    foreign key (client_id)
+        references client(id),
+
+    foreign key (monitoramento_id)
+        references monitoramento(id),
+
+    primary key(id)
+
+) ENGINE = InnoDB;
+
+
+create table if not exists youtube_search_config (
+
+    id bigint not null auto_increment,
+    client_id bigint not null,
+    monitoramento_id bigint not null,
+
+    dork varchar(255),
+    videoDuration varchar(50),
+    videoDefinition varchar(50),
+    videoEmbeddable tinyint(1) default 0,
+    ytOrder varchar(50) default "date",
+    publishAfter datetime,
+    palavrasExatas varchar(255),
+    palavrasQuePodeTer varchar(255),
+    excluirPalavras varchar(255),
+    lang varchar(50),
+
+    foreign key (client_id)
+        references client(id),
+
+    foreign key (monitoramento_id)
+        references monitoramento(id),
+
+    primary key(id)
+
+) ENGINE = InnoDB;
+
+
+create table if not exists instagram_search_config (
+
+    id bigint not null auto_increment,
+    client_id bigint not null,
+    monitoramento_id bigint not null,
+
+    foreign key (client_id)
+        references client(id),
+
+    foreign key (monitoramento_id)
+        references monitoramento(id),
+
+    primary key(id)
+
+) ENGINE = InnoDB;
+
+create table if not exists instagram_search_config_hashtags (
+
+    id bigint not null auto_increment,
+    instagram_search_config_id bigint not null,
+    hashtag_value varchar(255) not null,
+
+    foreign key (instagram_search_config_id)
+        references instagram_search_config(id),
+        
+    primary key(id)
+
+) ENGINE = InnoDB;
+
+create table if not exists index_hashtags_instagram (
+
+    id bigint not null auto_increment,
+    hashtag_instagram_id bigint not null,
+    hashtag_value varchar(255) not null,
+    
+    unique key uq_hashtag_value (hashtag_value),
 
     primary key(id)
 

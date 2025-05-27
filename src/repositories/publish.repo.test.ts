@@ -2,10 +2,10 @@ import publishRepo from "./publish.repo"
 import { FilterQuery } from "../types/FilterQuery";
 import clientRepo from "./client.repo";
 import monitoramentoRepo from "./monitoramento.repo";
-import mensaoRepo from "./mensao.repo";
 import { Mensao } from "../types/Mensao";
 import { Monitoramento } from "../types/Monitoramento";
 import { PublishClient } from "../types/Publish";
+import { Client } from "../types/Client";
 
 const parsedQuery: FilterQuery = {
     filters: {},
@@ -44,14 +44,8 @@ describe("Testes de publicações", () => {
         }) as Monitoramento
 
         monitoramento_id = monit.id
-        let mensao = await mensaoRepo.set({
-            id:0,
-            expressao:'uma expressao qualquer',
-            hashtags:['hashtag1', 'hashtag2']
-        }, client.id, monit.id) as Mensao
-
-        mensao_id = mensao.id    
-
+       
+        
         for (let i = 0; i < 10; i++) {
             publishs.push({
                 monitoramento_id:monitoramento_id,
@@ -191,8 +185,7 @@ describe("Testes de publicações", () => {
 
         await publishRepo.del(parsedQuery.client_id)
 
-        await mensaoRepo.del(parsedQuery.client_id, mensao_id)
-
+        
         await monitoramentoRepo.del(parsedQuery.client_id, monitoramento_id)
 
         await clientRepo.del(query.client_id)

@@ -1,4 +1,4 @@
-import { User, UserDetail } from "../types/User"
+import type { User, UserDetail } from "../types/User"
 import userRepo from "./user.repo"
 
 describe("Testes de gerenciamento de usuários no banco de dados com o user.repo.ts", () => {
@@ -122,7 +122,7 @@ describe("Testes de gerenciamento de usuários no banco de dados com o user.repo
 
         const hash = DataUser.hash
 
-        const userTest = await userRepo.getUserByHash(hash) as UserDetail
+        const userTest = await userRepo.getUserByRefreshToken(hash) as UserDetail
 
         expect(userTest.id).toBe(user.id)
 

@@ -134,7 +134,121 @@ export default {
                 message:"Server Error - Erro ao tentar deletar monitoramento"
             }) 
         
-    }
+    },
 
+    readAll: async (req:Request, res:Response) => {
+
+        const monitoramentosAtivos = monitoramentoRepo.getMonitoramentosDeClientesAtivosEConfigs()
+
+        if(!monitoramentosAtivos){
+            return response(res, { code: 500, message: 'Erro ao buscar monitoramentos ativos' })
+        }
+
+        response(res, {
+            code: 200,
+            body: monitoramentosAtivos
+        })
+
+    },
+
+    ativarMonitoramento: async (req:Request, res:Response) => {
+
+        const client_id = req.parsedQuery.client_id
+        const id = Number(req.body.id) || 0
+
+        if(id == 0 || Number.isNaN(id)) {
+            return response(res, { code: 400, message:'O parâmetro id é requerido' })
+        }
+
+        if(!await monitoramentoRepo.ativarMonitoramento(client_id, id)){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar ativar monitoramento"
+            }) 
+        }
+
+        response(res)
+
+    },
+
+    desativarMonitoramento: async (req:Request, res:Response) => {
+
+        const client_id = req.parsedQuery.client_id
+        const id = Number(req.body.id) || 0
+
+        if(id == 0 || Number.isNaN(id)) {
+            return response(res, { code: 400, message:'O parâmetro id é requerido' })
+        }
+
+        if(!await monitoramentoRepo.desativarMonitoramento(client_id, id)){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar desativar monitoramento"
+            }) 
+        }
+
+        response(res)
+
+    },
+
+    addConfig: async (req:Request, res:Response) => {
+
+        const client_id = req.parsedQuery.client_id
+        const id = Number(req.body.monitoramento_id) || 0
+
+        if(id == 0 || Number.isNaN(id)) {
+            return response(res, { code: 400, message:'O parâmetro id é requerido' })
+        }
+
+        if(!await monitoramentoRepo.addConfig(client_id, id, req.body)){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar adicionar configuração"
+            }) 
+        }
+
+        response(res)
+
+    },
+
+    editConfig: async (req:Request, res:Response) => {
+
+        const client_id = req.parsedQuery.client_id
+        const id = Number(req.body.monitoramento_id) || 0
+
+        if(id == 0 || Number.isNaN(id)) {
+            return response(res, { code: 400, message:'O parâmetro id é requerido' })
+        }
+
+        if(!await monitoramentoRepo.updateConfig(client_id, id, req.body)){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar editar configuração"
+            }) 
+        }
+
+        response(res)
+
+    },
+
+    deleteConfig: async (req:Request, res:Response) => {
+
+        const client_id = req.parsedQuery.client_id
+        const id = Number(req.body.monitoramento_id) || 0
+
+        if(id == 0 || Number.isNaN(id)) {
+            return response(res, { code: 400, message:'O parâmetro id é requerido' })
+        }
+
+        if(!await monitoramentoRepo.deleteConfig(client_id, id, req.body)){
+            return response(res, {
+                code: 500,
+                message:"Server Error - Erro ao tentar deletar configuração"
+            }) 
+        }
+
+        response(res)
+
+    }
 
 }

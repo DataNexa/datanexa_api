@@ -6,6 +6,9 @@ import userRepo from '../repositories/user.repo'
 import UserFactory from '../core/auth/UserFactory'
 import JWT from '../core/auth/JWT'
 import { tokenValidation } from '../core/auth/GoogleValidation';
+import cookie from '../core/auth/cookie'
+import Logger from '../util/logger'
+import sleeper from '../util/seleeper'
 
 interface googlePayLoad { email:string, name:string, sub:string, picture:string, given_name:string }
 
@@ -14,8 +17,9 @@ export default {
     google: async (req:Request, res:Response) => {
 
         await body('googleToken').isString().trim().run(req)
-
+        
         if(!validationResult(req).isEmpty()){
+            Logger.error('Campo de googleToken faltando', 'google')
             return response(res, {
                 code: 400,
                 message:"Bad Request - Precisa da credencial do google"
@@ -26,10 +30,13 @@ export default {
 
         const data = await tokenValidation(googleToken)
 
-        if(!data) return response(res, {
-            code:500,
-            message: 'Erro ao tentar resgatar informações do google'
-        })
+        if(!data) {
+            console.log('Erro ao tentar validar o token do google');
+            return response(res, {
+                code:500,
+                message: 'Erro ao tentar resgatar informações do google'
+            })
+        }
 
         const gpayload = data as any as googlePayLoad
         const userByEmail = await userRepo.getUserByEmail(gpayload.email)
@@ -42,26 +49,32 @@ export default {
 
         if(!userByEmail){
 
-            const userDetail = await userRepo.saveUserClient(gpayload.name, gpayload.picture, gpayload.email, '')
+            const userDetail = await userRepo.saveUserClient(gpayload.name, gpayload.email, gpayload.picture, '')
 
-            if(!userDetail) return response(res, {
-                code: 500,
-                message: 'Erro ao tentar salvar o usuário no banco de dados'
-            })
+            if(!userDetail) {
+                Logger.error('Erro ao tentar salvar o usuário no banco de dados', 'google')
+                
+                return response(res, {
+                    code: 500,
+                    message: 'Erro ao tentar salvar o usuário no banco de dados'
+                })
+            }
 
             const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(userDetail.id, gpayload.email, userAgent, clientIp)
 
             if(!hash){
+                Logger.error('Erro ao tentar salvar refresh_token', 'google')
                 return response(res, {
                     code: 500,
                     message: 'Erro ao tentar salvar criar refresh_token'
                 })
             }
 
+            cookie.setCookie(res, 'refresh_token', hash)
+
             return response(res, {
                 body:{
-                    user:userDetail,
-                    refresh_token: hash
+                    user:userDetail
                 },
                 code:200
             })
@@ -70,16 +83,20 @@ export default {
         const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(userByEmail.id, gpayload.email, userAgent, clientIp)
 
         if(!hash){
+            
+            Logger.error('Erro ao tentar salvar refresh_token', 'google')
+            
             return response(res, {
                 code: 500,
                 message: 'Erro ao tentar salvar criar refresh_token'
             })
         }
 
+        cookie.setCookie(res, 'refresh_token', hash)
+
         response(res, {
             body:{
-                user:userByEmail,
-                refresh_token: hash
+                user:userByEmail
             },
             code:200
         })
@@ -99,6 +116,7 @@ export default {
         const userAgent = req.headers['user-agent'] || 'undefined';
 
         if(!validationResult(req).isEmpty()){
+            Logger.error('Campo de e-mail ou senha faltando', 'login')
             return response(res, {
                 code: 400,
                 message:"Bad Request - Campos Faltando"
@@ -117,12 +135,24 @@ export default {
         
         const user = await userRepo.getUserByEmailAndPass(email, senha, userAgent, clientIp)
 
-        if(!user){
+        if(!user || !user.user){
             return response(res, {
                 code: 404,
                 message:"Not Found - Usuário não encontrado"
             })
         }
+
+        const hash = await userRepo.saveDeviceAndGenerateTokenRefresh(user.user.id, email, userAgent, clientIp)
+
+        if(!hash){
+            Logger.error('Erro ao tentar salvar refresh_token', 'login')
+            return response(res, {
+                code: 500,
+                message: 'Erro ao tentar salvar criar refresh_token'
+            })
+        }
+
+        cookie.setCookie(res, 'refresh_token', hash)
 
         response(res, {
             body:user,
@@ -131,24 +161,55 @@ export default {
 
     },
 
-    openSession: async (req:Request, res:Response) => {
+    openSessionUsingSecretToken: async (req:Request, res:Response) => {
 
-        if(!req.headers.authorization){
-            return response(res, {code:401})
-        } 
+        await body('secret_token').isString().trim().run(req)
 
-        const [type, hash] = req.headers.authorization.split(' ')
-        if(type != 'Open'){
-            return response(res, {code:401}) 
+        if(!validationResult(req).isEmpty()){
+            Logger.error('Campo de secret_token faltando', 'openSessionUsingSecretToken')
+            return response(res, {
+                code: 400,
+                message:"Bad Request - Campos Faltando"
+            })
         }
 
-        const user = await userRepo.getUserByRefreshToken(hash)
+        const { secret_token } = req.body
+
+        const user = await userRepo.getUserByRefreshToken(secret_token)
 
         if(!user){
+            Logger.error('secret_token inválido', 'openSessionUsingSecretToken')
+            return response(res, {
+                code: 401,
+                message:"Not Found - Usuário não encontrado"
+            })
+        }
+
+        const session = await UserFactory.generateUserToken(user)
+
+        response(res, {code:200, body: session})
+
+    },
+
+    openSession: async (req:Request, res:Response) => {
+
+        const refresh_token = req.cookies['refresh_token'];
+
+        await sleeper.secureSleep(2000)
+
+        if(!refresh_token){
+            Logger.error('refresh_token não enviado', 'openSession')
             return response(res, {code:401}) 
         }
 
-        const session = UserFactory.generateUserToken(user)
+        const user = await userRepo.getUserByRefreshToken(refresh_token)
+
+        if(!user){
+            Logger.error('refresh_token inválido', 'openSession')
+            return response(res, {code:401}) 
+        }
+
+        const session = await UserFactory.generateUserToken(user)
 
         response(res, {code:200, body: session})
 
@@ -160,9 +221,10 @@ export default {
         await body('email').isEmail().trim().run(req)
 
         if(!validationResult(req).isEmpty()){
+            Logger.error('Campo de e-mail faltando', 'genCode')
             return response(res, {
                 code: 400,
-                message:"Bad Request - Campos Faltando"
+                message:"Bad Request - Campos de e-mail faltando"
             })
         }
 
@@ -170,6 +232,7 @@ export default {
         const user = await userRepo.getUserByEmail(email)
         
         if(!user){
+            Logger.error('Usuário não encontrado', 'genCode')
             return response(res, {
                 code: 404,
                 message:"Usuário não encontrado"
@@ -179,6 +242,7 @@ export default {
         const code = JWT.generateRandomCode(6)
 
         if(!await userRepo.saveCodeUser(code, user.id)){
+            Logger.error('Erro ao tentar salvar o código', 'genCode')
             return response(res, {
                 code: 500,
                 message:"Erro ao tentar gerar o código"
@@ -201,6 +265,7 @@ export default {
         await body('code').isString().trim().run(req)
 
         if(!validationResult(req).isEmpty()){
+            Logger.error('Campo de e-mail ou código faltando', 'consumeCode')
             return response(res, {
                 code: 400,
                 message:"Bad Request - Campos Faltando"
@@ -212,6 +277,7 @@ export default {
         const user = await userRepo.getUserByEmail(email)
         
         if(!user){
+            Logger.error('Usuário não encontrado', 'consumeCode')
             return response(res, {
                 code: 404,
                 message:"Usuário não encontrado"
@@ -219,6 +285,7 @@ export default {
         }
 
         if(!await userRepo.consumeCode(code, user.id)){
+            Logger.error('Erro ao tentar consumir o código', 'consumeCode')
             return response(res, {
                 code: 400,
                 message:"Erro ao tentar consumir o código"
@@ -227,7 +294,7 @@ export default {
 
         response(res, {
             code:200,
-            body: await UserFactory.generateUserToken(user)
+            body: await UserFactory.generateUserToken(user, 0.5)
         })
 
     },
@@ -238,9 +305,10 @@ export default {
         await body('newPass').isString().trim().run(req)
 
         if(!validationResult(req).isEmpty()){
+            Logger.error('Campo de nova senha faltando', 'updatePass')
             return response(res, {
                 code: 400,
-                message:"Bad Request - Campos Faltando"
+                message:"Bad Request - Campo de nova senha faltando"
             })
         }
 

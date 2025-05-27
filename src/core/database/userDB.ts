@@ -1,4 +1,4 @@
-import { User, UserDetail, user_type } from "../../types/User";
+import { User, UserDetail } from "../../types/User";
 import { query, insertOnce, multiTransaction, MultiTransaction } from './mquery'
 import UserFactory from "../auth/UserFactory";
 import JWT from "../auth/JWT";
@@ -172,4 +172,10 @@ async function saveUserDetail(user:UserDetail){
 
 }
 
-export default { saveUserBOT, saveUserDetail, getUserByEmail, getUser, addClientToUser }
+export default { 
+    saveUserBOT, 
+    saveUserDetail, 
+    getUserByEmail, 
+    getUser, 
+    addClientToUser 
+}
