@@ -302,29 +302,50 @@ export default {
 
     ativarMonitoramento: async (client_id:number, monitoramento_id:number):Promise<boolean> => {
 
-        const res  = await execute(`
-            UPDATE monitoramento m
-            SET ativo = 1
-            WHERE m.id = ?
-            AND (
-                SELECT COUNT(*)
-                FROM monitoramento
-                WHERE ativo = 1
-                AND client_id = m.client_id
-            ) < (
-                SELECT max_monitoramentos_ativos
-                FROM client_config
-                WHERE client_id = m.client_id
-            )
-            AND m.client_id = ?
-        `, [monitoramento_id, client_id])
+        const conn = await multiTransaction()
 
-        if(res.error) return false
-        const r = res.rows as OkPacket
-        if(r.affectedRows === 0) return false
-        return true
+        try {
+
+            const resCheck = await conn.execute(`
+                    select max_monitoramentos_ativos, (
+                        select count(id) from monitoramento where ativo = 1 and client_id = ?
+                    ) as total_ativos
+                    from client_config
+                    where client_id = ?
+                `, [client_id, client_id])
+
+            if(resCheck.error){
+                throw new Error(resCheck.error_message)
+            }
+
+            const rows = resCheck.rows as { max_monitoramentos_ativos:number, total_ativos:number }[]
+            if(rows.length === 0){
+                throw new Error("Cliente não encontrado ou sem configuração de monitoramentos ativos.")
+            }
+
+            if(rows[0].total_ativos >= rows[0].max_monitoramentos_ativos){
+                throw new Error("Limite máximo de monitoramentos ativos atingido.")
+            }
+
+            const res  = await conn.execute(`
+               UPDATE monitoramento SET ativo = 1 WHERE id = ? AND client_id = ?
+            `, [monitoramento_id, client_id])
+
+            if(res.error){
+                throw new Error(res.error_message)
+            }
+
+            await conn.finish() // commita e finaliza a conexão
+            return true
+            
+        } catch (error) {
+            Logger.error(error, "repositories/monitoramento.ativarMonitoramento")
+            await conn.rollBack()
+            return false
+        }
 
     },
+
 
     get: async (filter:FilterQuery):Promise<Monitoramento[]|undefined> => {
 

@@ -158,39 +158,50 @@ describe("Testes do repositorio de Monitoramentos", () => {
 
     })
 
-    test("Pegando lista de monitoramentos e configurações que precisa ser unico", async () => {
+    test("Ativando monitoramentos ao máximo do limite", async () => {
 
-        const monitoramentosFull = 
-            await monitoramentoRepo
-            .getMonitoramentosDeClientesAtivosEConfigs() as MonitoramentoFull[]
+        const monitoramentos = await monitoramentoRepo.get(parsedQuery) as Monitoramento[]
 
-        let total = 0
+        expect(monitoramentos.length).toBe(2)
 
-        monitoramentosFull.forEach(monit => {
-            if(monit.cliente_id === parsedQuery.client_id){
-                total++
-            }
-        })
+        const monit1 = monitoramentos[0]
+        const res1   = await monitoramentoRepo.ativarMonitoramento(parsedQuery.client_id, monit1.id)
+        expect(res1).toBe(true)
 
-        expect(total).toBe(1)
-
+        const monit2 = monitoramentos[1]
+        const res2   = await monitoramentoRepo.ativarMonitoramento(parsedQuery.client_id, monit2.id)
+        expect(res2).toBe(false)
+       
     })
 
-    test("Editando limite de monitoramentos ativos para 2", async () => {
+    test("Aumentando limite máximo de monitoramentos ativos", async () => {
 
-        const clientConfig = await clientRepo.addClientConfig(parsedQuery.client_id, {
+        const clientConfig = await clientRepo.updateClientConfig(parsedQuery.client_id, {
             id:0,
             client_id:parsedQuery.client_id,
             max_monitoramentos_ativos:2,
             instagram_app_id: configAdmin.instagram_app_id
-        }) as ClientConfig
+        })
 
-        expect(clientConfig.max_monitoramentos_ativos).toBe(2)        
+        expect(clientConfig).toBe(true)
+
+        const res = await monitoramentoRepo.getMonitoramentosDeClientesAtivosEConfigs()
+        expect(res).not.toBe(false)
+
+        const monitoramentosFull = res as MonitoramentoFull[]
+        expect(monitoramentosFull.length).toBe(1)
+
+        const todosOsMonitoramentos = await monitoramentoRepo.get(parsedQuery) as Monitoramento[]
+        expect(todosOsMonitoramentos.length).toBe(2)
+
+        const monitoramento2 = todosOsMonitoramentos[1]
+        const res2 = await monitoramentoRepo.ativarMonitoramento(parsedQuery.client_id, monitoramento2.id)
+
+        expect(res2).toBe(true)
 
     })
-    
 
-    test("Pegando lista de monitoramentos e configurações que precisa ser 2", async () => {
+    test("Pegando lista de monitoramentos e configurações", async () => {
 
         const monitoramentosFull = 
             await monitoramentoRepo
@@ -207,6 +218,7 @@ describe("Testes do repositorio de Monitoramentos", () => {
         expect(total).toBe(2)
 
     })
+
 
     afterAll( async () => {
         

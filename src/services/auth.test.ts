@@ -37,6 +37,16 @@ const usersDataBase:UserDetail[] = [
 
 jest.mock("../repositories/user.repo", () => {
     return {
+
+        saveDeviceAndGenerateTokenRefresh: jest.fn(async (user_id:number, email:string, device:string, ip:string) => {
+            for(const u of usersDataBase){
+                if(u.id == user_id){
+                    return `hash${u.id}`
+                }
+            }
+            return undefined
+        }),
+
         getUserByEmailAndPass:jest.fn(async (email:string, senha:string, device:string, ip:string) => {
             for(const u of usersDataBase){
                 if(u.email == email){ 
@@ -248,7 +258,7 @@ describe("Teste do serviço auth.js", () => {
 
         const req1 = await request(app)
         .get('/auth/openSession') 
-        .set("Authorization", `Open hash1`)
+        .set("Cookie", [`refresh_token=hash1`])
 
         const req2 = await request(app)
         .get('/auth/openSession') 
@@ -256,7 +266,7 @@ describe("Teste do serviço auth.js", () => {
 
         const req3 = await request(app)
         .get('/auth/openSession') 
-        .set("Authorization", `Open hash100`)
+        .set("Cookie", [`refresh_token=hash100`])
         
         expect(req1.statusCode).toBe(200); 
         expect(req2.statusCode).toBe(401); 

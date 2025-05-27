@@ -155,7 +155,7 @@ create table if not exists monitoramento (
     create_at datetime DEFAULT CURRENT_TIMESTAMP,
     data_inicio datetime,
     data_fim datetime,
-    ativo tinyint(1) not null default 1,
+    ativo tinyint(1) not null default 0,
 
     foreign key(client_id)
         references client(id),
