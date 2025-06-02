@@ -1,0 +1,21 @@
+[req]
+default_bits       = 2048
+prompt             = no
+default_md         = sha256
+req_extensions     = req_ext
+distinguished_name = dn
+
+[dn]
+C = BR
+ST = Sao Paulo
+L = Sao Paulo
+O = Datanexa
+OU = Dev
+CN = 192.168.0.11
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+IP.1 = 192.168.0.11
+DNS.1 = localhost

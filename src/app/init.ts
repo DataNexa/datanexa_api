@@ -36,7 +36,7 @@ const corsOptions = {
 
         if (!origin) return callback(null, true);
 
-        const isLocalhost = !Config.instance().isInProduction() && origin === localhostOrigin;
+        const isLocalhost = !Config.instance().isInProduction()
         const isAllowedSubdomain = origin.endsWith('.datanexa.com.br');
 
         if (isLocalhost || isAllowedSubdomain) {
