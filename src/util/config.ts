@@ -7,7 +7,7 @@ dotenv.config()
 class Config {
     
     private static config:Config;
-    private conf:{ version:string, production:boolean, configurado:boolean }
+    private conf:{ version:string, production:boolean, ssl:boolean, configurado:boolean }
     private conf_str:string;
     private pipeline_user:string;
     private data:{
@@ -92,6 +92,10 @@ class Config {
 
     public isInProduction(){
         return this.conf.production
+    }
+
+    public isSSL(){
+        return this.conf.ssl
     }
 
     public getPipelineUser(){

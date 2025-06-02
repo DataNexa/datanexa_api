@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  datanexa:
+    build:
+      context: .
+    container_name: node_datanexa
+    restart: always
+    volumes:
+      - .:/usr/src/app
+    networks:
+      - datanexa-network
+    depends_on:
+      - mysql
+    expose:
+      - "4000"
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: meubanco
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - datanexa-network
+
+
+volumes:
+  mysql-data:
+
+networks:
+  datanexa-network:
+    external: true

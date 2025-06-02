@@ -254,7 +254,7 @@ export default {
             const monitoramentosFullAtivos: MonitoramentoFull[] = []
             const monitoramentosParaDesativar: any[] = []
             const hoje = new Date()
-    
+
             for (const monitoramento of monitoramentos) {
                 if (monitoramento.data_fim && new Date(monitoramento.data_fim) < hoje) {
                     monitoramento.ativo = false
@@ -277,7 +277,7 @@ export default {
                 const res = await conn.execute(`UPDATE monitoramento SET ativo = 0 WHERE id IN (?)`, [ids])
                 if (res.error) throw new Error(res.error_message)
             }
-    
+        
             await conn.finish() // commita e finaliza a conexão
             return monitoramentosFullAtivos
         } catch (err: any) {

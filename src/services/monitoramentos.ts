@@ -138,7 +138,7 @@ export default {
 
     readAll: async (req:Request, res:Response) => {
 
-        const monitoramentosAtivos = monitoramentoRepo.getMonitoramentosDeClientesAtivosEConfigs()
+        const monitoramentosAtivos = await monitoramentoRepo.getMonitoramentosDeClientesAtivosEConfigs()
 
         if(!monitoramentosAtivos){
             return response(res, { code: 500, message: 'Erro ao buscar monitoramentos ativos' })

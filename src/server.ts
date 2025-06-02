@@ -17,11 +17,14 @@ const options = {
 const app = async () => { 
    try {
         await install.install()
-        return await (
-            !Config.instance().isInProduction() ? 
-            https.createServer(options, await init(globals.version)) :
+        const conf = Config.instance()
+        const app = await (
+            !conf.isInProduction() && conf.isSSL() ? 
+            await https.createServer(options, await init(globals.version)) :
             await init(globals.version)
         )
+        Logger.info('Servidor iniciado com sucesso')
+        return app
     } catch (error) {
         Logger.error(error, 'server')
         return null
@@ -36,7 +39,7 @@ const app = async () => {
             Logger.error('Erro ao tentar iniciar servidor', 'server')
             return
         }
-        (server).listen(globals.port, () => {
+        (server).listen(globals.port, '0.0.0.0', () => {
             Logger.info(`
             * ██████╗░░█████╗░████████╗░█████╗░███╗░░██╗███████╗██╗░░██╗░█████╗░ *
             * ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗████╗░██║██╔════╝╚██╗██╔╝██╔══██╗ *
@@ -45,7 +48,7 @@ const app = async () => {
             * ██████╔╝██║░░██║░░░██║░░░██║░░██║██║░╚███║███████╗██╔╝╚██╗██║░░██║ *
             * ╚═════╝░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚══╝╚══════╝╚═╝░░╚═╝╚═╝░░╚═╝ *
             version: ${globals.version}
-            port: ${globals.port}
+            port:    ${globals.port}
             `)
         })
     }
